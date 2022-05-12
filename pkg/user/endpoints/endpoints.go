@@ -1,4 +1,4 @@
-package userservice
+package userendpoint
 
 import (
 	"context"
