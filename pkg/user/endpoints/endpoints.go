@@ -1,7 +1,7 @@
 package userservice
 
 import (
-	"../userservice"
+	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	"github.com/go-kit/kit/endpoint"
 )
 
