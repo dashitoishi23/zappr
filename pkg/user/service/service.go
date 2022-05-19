@@ -16,3 +16,5 @@ func NewUserService() UserService { //makes userService struct implement UserSer
 func (s *userService) GenerateToken(_ context.Context) string {
 	return "dummyJWT"
 }
+
+func init(){}

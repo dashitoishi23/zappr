@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,9 +15,8 @@ import (
 )
 
 func main() {
-	fs := flag.NewFlagSet("main", flag.ExitOnError)
 	var (
-		httpAddr = fs.String("http-addr", ":8081", "HTTP listen address")
+		httpAddr = net.JoinHostPort("localhost", "9000");
 	)
 
 	var (
@@ -29,11 +27,14 @@ func main() {
 
 	var g group.Group
 	{
-		httpListener, err := net.Listen("tcp", *httpAddr)
-		if err != nil{
-			os.Exit(1)
-		}
+		httpListener, err := net.Listen("tcp", httpAddr)
+		fmt.Println(httpListener.Addr().String(), err)
+		// if err != nil{
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
 		g.Add(func() error {
+			fmt.Println(httpAddr)
 			return http.Serve(httpListener, httpHandler)
 		}, func(error){
 			httpListener.Close()
@@ -54,4 +55,6 @@ func main() {
 			close(cancelInterrupt)
 		})
 	}
+
+	g.Run()
 }

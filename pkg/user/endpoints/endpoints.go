@@ -2,13 +2,10 @@ package userendpoint
 
 import (
 	"context"
-	"errors"
-	"time"
+	"fmt"
 
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/ratelimit"
-	"golang.org/x/time/rate"
 )
 
 type Set struct {
@@ -16,14 +13,8 @@ type Set struct {
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService) Set {
-	var generateTokenEndpoint endpoint.Endpoint
-	{
-		generateTokenEndpoint = GenerateTokenEndpoint(svc)
-		generateTokenEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 1))(generateTokenEndpoint)
-	}
-
 	return Set{
-		GenerateToken: generateTokenEndpoint,
+		GenerateToken: GenerateTokenEndpoint(svc),
 	}
 }
 
@@ -32,9 +23,10 @@ func GenerateTokenEndpoint(s userservice.UserService) endpoint.Endpoint{
 		_, ok:= request.(GenerateTokenRequest)
 		s := s.GenerateToken(ctx)
 		if !ok {
-			err:= errors.New("Invalid request")
+			fmt.Println(err.Error())
+			return GenerateTokenResponse{s, err.Error()}, nil
 		}
-		return GenerateTokenResponse{s: s, err: err}, nil
+		return GenerateTokenResponse{s, ""}, nil
 	}
 }
 
@@ -44,5 +36,7 @@ type GenerateTokenRequest struct {
 
 type GenerateTokenResponse struct {
 	s string `json:"s"`
-	err error `json:"err"`
+	err string `json:"err,omitempty"`
 } //strongly typed response object
+
+func init(){}
