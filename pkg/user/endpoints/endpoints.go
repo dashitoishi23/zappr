@@ -19,15 +19,21 @@ func New(svc userservice.UserService) Set {
 }
 
 func GenerateTokenEndpoint(s userservice.UserService) endpoint.Endpoint{
-	return func(ctx context.Context, request interface{}) (response interface{}, err error){
-		_, ok:= request.(GenerateTokenRequest)
-		s := s.GenerateToken(ctx)
-		if !ok {
-			fmt.Println(err.Error())
-			return GenerateTokenResponse{s, err.Error()}, nil
-		}
+	return func(ctx context.Context, request interface{}) (interface{}, error){
+		req := request.(GenerateTokenRequest)
+		fmt.Println(req)
+		s := s.GenerateJWTToken(ctx)
 		return GenerateTokenResponse{s, ""}, nil
 	}
+}
+
+func (s *Set) GenerateJWTToken(ctx context.Context) string {
+	resp, _ := s.GenerateToken(ctx, GenerateTokenRequest{})
+
+	getTokenResp := resp.(GenerateTokenResponse)
+
+	return getTokenResp.S
+
 }
 
 type GenerateTokenRequest struct {
@@ -35,8 +41,6 @@ type GenerateTokenRequest struct {
 } //strongly typed request object
 
 type GenerateTokenResponse struct {
-	s string `json:"s"`
-	err string `json:"err,omitempty"`
+	S string `json:"s"`
+	Err string `json:"err,omitempty"`
 } //strongly typed response object
-
-func init(){}

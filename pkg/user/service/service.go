@@ -1,9 +1,12 @@
 package userservice
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type UserService interface {
-	GenerateToken(ctx context.Context) string
+	GenerateJWTToken(ctx context.Context) string
 }
 
 type userService struct {
@@ -13,8 +16,7 @@ func NewUserService() UserService { //makes userService struct implement UserSer
 	return &userService{} //returns an address which points to userService to make changes in original memory address
 }
 
-func (s *userService) GenerateToken(_ context.Context) string {
+func (s *userService) GenerateJWTToken(_ context.Context) string {
+	fmt.Println("Services")
 	return "dummyJWT"
 }
-
-func init(){}
