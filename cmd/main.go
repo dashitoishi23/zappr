@@ -38,10 +38,7 @@ func main() {
 	{
 		httpListener, err := net.Listen("tcp", httpAddr)
 		fmt.Println(httpListener.Addr().String(), err)
-		// if err != nil{
-		// 	fmt.Println(err)
-		// 	os.Exit(1)
-		// }
+		
 		g.Add(func() error {
 			fmt.Println(httpAddr)
 			return http.Serve(httpListener, httpHandler)

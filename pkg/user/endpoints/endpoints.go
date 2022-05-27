@@ -2,7 +2,6 @@ package userendpoint
 
 import (
 	"context"
-	"fmt"
 
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	"github.com/go-kit/kit/endpoint"
@@ -21,7 +20,6 @@ func New(svc userservice.UserService) Set {
 func GenerateTokenEndpoint(s userservice.UserService) endpoint.Endpoint{
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(GenerateTokenRequest)
-		fmt.Println(req)
 		s, err := s.GenerateJWTToken(ctx, req.UserEmail)
 		
 		if err !=nil {

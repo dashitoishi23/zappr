@@ -3,7 +3,6 @@ package usertransport
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -25,7 +24,6 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 
 func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
 	var req userendpoint.GenerateTokenRequest
-	fmt.Println(req)
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 
@@ -38,7 +36,6 @@ func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interfa
 
 func encodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(error); ok && e != nil {
-		fmt.Print(e)
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json")
