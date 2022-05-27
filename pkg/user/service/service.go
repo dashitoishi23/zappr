@@ -2,11 +2,13 @@ package userservice
 
 import (
 	"context"
-	"fmt"
+	"os"
+
+	"github.com/golang-jwt/jwt"
 )
 
 type UserService interface {
-	GenerateJWTToken(ctx context.Context) string
+	GenerateJWTToken(ctx context.Context, userEmail string) (string, error)
 }
 
 type userService struct {
@@ -16,7 +18,24 @@ func NewUserService() UserService { //makes userService struct implement UserSer
 	return &userService{} //returns an address which points to userService to make changes in original memory address
 }
 
-func (s *userService) GenerateJWTToken(_ context.Context) string {
-	fmt.Println("Services")
-	return "dummyJWT"
+type zapprJWTClaims struct {
+	UserEmail string `json: "userEmail"`
+	jwt.StandardClaims
+}
+
+func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (string, error) {
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, zapprJWTClaims{
+		userEmail,
+		jwt.StandardClaims{
+			ExpiresAt: 15000,
+			Issuer: "zappr",
+		},
+	})
+	
+	signingKey := []byte(os.Getenv("JWT_SIGNING_KEY"))
+
+	ss, err := token.SignedString(signingKey)
+
+	return ss, err
 }

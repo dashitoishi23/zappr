@@ -22,7 +22,11 @@ func GenerateTokenEndpoint(s userservice.UserService) endpoint.Endpoint{
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(GenerateTokenRequest)
 		fmt.Println(req)
-		s := s.GenerateJWTToken(ctx)
+		s, err := s.GenerateJWTToken(ctx, req.UserEmail)
+		
+		if err !=nil {
+			return GenerateTokenResponse{"", err.Error()}, err
+		}
 		return GenerateTokenResponse{s, ""}, nil
 	}
 }
@@ -37,7 +41,7 @@ func (s *Set) GenerateJWTToken(ctx context.Context) string {
 }
 
 type GenerateTokenRequest struct {
-
+	UserEmail string `json: "useremail"`
 } //strongly typed request object
 
 type GenerateTokenResponse struct {

@@ -11,10 +11,19 @@ import (
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
+	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/oklog/oklog/pkg/group"
 )
 
 func main() {
+
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	
 	var (
 		httpAddr = net.JoinHostPort("localhost", "9000");
 	)
