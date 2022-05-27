@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -44,24 +45,22 @@ func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (str
 }
 
 func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
+	jwtToken = strings.Split(jwtToken, " ")[1]
+
 	parsedToken, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
-		parsed, ok := t.Method.(*jwt.SigningMethodHMAC) 
+		_, ok := t.Method.(*jwt.SigningMethodHMAC) 
 		
 		if !ok {
 			return nil, fmt.Errorf("unauthorized attempt")
 		}
-
-		fmt.Println(parsed.Alg())
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return os.Getenv("JWT_SIGNING_KEY"), nil
+		return []byte(os.Getenv("JWT_SIGNING_KEY")), nil
 	})
 
 	if err != nil {
 		return false
 	}
 
-	fmt.Println(parsedToken.Raw)
-
-	return true
+	return parsedToken.Valid
 
 }
