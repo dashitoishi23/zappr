@@ -2,6 +2,7 @@ package userservice
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 type UserService interface {
 	GenerateJWTToken(ctx context.Context, userEmail string) (string, error)
+	ValidateLogin(ctx context.Context, jwt string) (bool)
 }
 
 type userService struct {
@@ -39,4 +41,27 @@ func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (str
 	ss, err := token.SignedString(signingKey)
 
 	return ss, err
+}
+
+func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
+	parsedToken, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
+		parsed, ok := t.Method.(*jwt.SigningMethodHMAC) 
+		
+		if !ok {
+			return nil, fmt.Errorf("unauthorized attempt")
+		}
+
+		fmt.Println(parsed.Alg())
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return os.Getenv("JWT_SIGNING_KEY"), nil
+	})
+
+	if err != nil {
+		return false
+	}
+
+	fmt.Println(parsedToken.Raw)
+
+	return true
+
 }
