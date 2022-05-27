@@ -3,6 +3,7 @@ package userservice
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -28,7 +29,7 @@ func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (str
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, zapprJWTClaims{
 		userEmail,
 		jwt.StandardClaims{
-			ExpiresAt: 15000,
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			Issuer: "zappr",
 		},
 	})

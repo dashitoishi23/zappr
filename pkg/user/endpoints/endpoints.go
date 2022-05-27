@@ -34,7 +34,7 @@ func (s *Set) GenerateJWTToken(ctx context.Context) string {
 
 	getTokenResp := resp.(GenerateTokenResponse)
 
-	return getTokenResp.S
+	return getTokenResp.JWT
 
 }
 
@@ -43,6 +43,6 @@ type GenerateTokenRequest struct {
 } //strongly typed request object
 
 type GenerateTokenResponse struct {
-	S string `json:"s"`
+	JWT string `json:"jwt"`
 	Err string `json:"err,omitempty"`
 } //strongly typed response object
