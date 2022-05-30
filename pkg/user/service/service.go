@@ -23,7 +23,7 @@ func NewUserService() UserService { //makes userService struct implement UserSer
 }
 
 type zapprJWTClaims struct {
-	UserEmail string `json: "userEmail"`
+	UserEmail string `json:"userEmail"`
 	jwt.StandardClaims
 }
 

@@ -6,11 +6,12 @@ import (
 	"io"
 	"net/http"
 
+	authhandler "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
 )
-
 func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 
 	tokenHandler := httptransport.NewServer(
@@ -29,14 +30,17 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 
 	r.Handle("/token", tokenHandler).Methods("POST")
 
-	r.Handle("/login", loginHandler).Methods("POST")
+	r.Handle("/login", loginHandler).Methods("POST").Handler(negroni.New(
+		negroni.HandlerFunc(authhandler.AuthHandler),
+		negroni.Wrap(tokenHandler),
+	))
 
 	return r
 }
 
 func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
 	var req userendpoint.GenerateTokenRequest
-
+	
 	err := json.NewDecoder(r.Body).Decode(&req)
 
 	if err == io.EOF{
