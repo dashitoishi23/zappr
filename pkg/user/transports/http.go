@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	authhandler "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -17,7 +17,7 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
 		decodeGenerateTokenHTTPRequest,
-		encodeHTTPGenericResponse,
+		util.EncodeHTTPGenericResponse,
 	)
 
 	loginHandler := httptransport.NewServer(
@@ -31,7 +31,7 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 	r.Handle("/token", tokenHandler).Methods("POST")
 
 	r.Handle("/login", loginHandler).Methods("POST").Handler(negroni.New(
-		negroni.HandlerFunc(authhandler.AuthHandler),
+		negroni.HandlerFunc(util.AuthHandler),
 		negroni.Wrap(loginHandler),
 	))
 
@@ -79,15 +79,6 @@ func encodeValidateLoginResponse(ctx context.Context, w http.ResponseWriter, res
 		return json.NewEncoder(w).Encode(response)
 	}
 	
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(response)
-}
-
-func encodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(error); ok && e != nil {
-		return nil
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(response)
 }

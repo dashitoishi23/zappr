@@ -45,6 +45,10 @@ func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (str
 }
 
 func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
+	if jwtToken == "" {
+		return false
+	}
+	
 	jwtToken = strings.Split(jwtToken, " ")[1]
 
 	parsedToken, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
