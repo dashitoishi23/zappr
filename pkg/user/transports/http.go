@@ -32,7 +32,7 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 
 	r.Handle("/login", loginHandler).Methods("POST").Handler(negroni.New(
 		negroni.HandlerFunc(authhandler.AuthHandler),
-		negroni.Wrap(tokenHandler),
+		negroni.Wrap(loginHandler),
 	))
 
 	return r
