@@ -8,24 +8,30 @@ import (
 
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/gorilla/mux"
 )
 
 func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
-	m:= http.NewServeMux()
 
-	m.Handle("/token", httptransport.NewServer(
+	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
 		decodeGenerateTokenHTTPRequest,
 		encodeHTTPGenericResponse,
-	))
+	)
 
-	m.Handle("/login", httptransport.NewServer(
+	loginHandler := httptransport.NewServer(
 		endpoints.ValidateLogin,
 		decodeValidateLoginRequest,
 		encodeValidateLoginResponse,
-	))
+	)
 
-	return m
+	r := mux.NewRouter()
+
+	r.Handle("/token", tokenHandler).Methods("POST")
+
+	r.Handle("/login", loginHandler).Methods("POST")
+
+	return r
 }
 
 func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
