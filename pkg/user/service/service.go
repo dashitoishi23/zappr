@@ -2,17 +2,23 @@ package userservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
+	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
+	"gopkg.in/validator.v2"
 )
 
 type UserService interface {
 	GenerateJWTToken(ctx context.Context, userEmail string) (string, error)
 	ValidateLogin(ctx context.Context, jwt string) (bool)
+	SignupUser(ctx context.Context, newUser models.User) (models.User, error)
 }
 
 type userService struct {
@@ -48,7 +54,7 @@ func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
 	if jwtToken == "" {
 		return false
 	}
-	
+
 	jwtToken = strings.Split(jwtToken, " ")[1]
 
 	parsedToken, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
@@ -67,4 +73,14 @@ func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
 
 	return parsedToken.Valid
 
+}
+
+func (s *userService) SignupUser(_ context.Context, newUser models.User) (models.User, error) {
+	if errs := validator.Validate(newUser); errs != nil {
+		return newUser, errors.New(constants.INVALID_MODEL)
+	}
+
+	newUser.Identifier = uuid.New().String()
+
+	return newUser, nil
 }

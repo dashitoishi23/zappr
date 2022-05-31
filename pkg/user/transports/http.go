@@ -26,6 +26,12 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 		encodeValidateLoginResponse,
 	)
 
+	signupuserHandler := httptransport.NewServer(
+		endpoints.SignupUser,
+		decodeSignupUserRequest,
+		util.EncodeHTTPGenericResponse,
+	)
+
 	r := mux.NewRouter()
 
 	r.Handle("/token", tokenHandler).Methods("POST")
@@ -34,6 +40,8 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 		negroni.HandlerFunc(util.AuthHandler),
 		negroni.Wrap(loginHandler),
 	))
+
+	r.Handle("/signup", signupuserHandler).Methods("POST")
 
 	return r
 }
@@ -66,6 +74,14 @@ func decodeValidateLoginRequest(_ context.Context, r * http.Request) (interface{
 	if err == io.EOF{
 		return req, nil	
 	}
+
+	return req, err
+}
+
+func decodeSignupUserRequest(_ context.Context, r *http.Request) (interface{}, error){
+	var req userendpoint.SignupUserRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
 
 	return req, err
 }
