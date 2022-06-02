@@ -3,7 +3,7 @@ package userendpoint
 import (
 	"context"
 
-	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models/view"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	"github.com/go-kit/kit/endpoint"
 )

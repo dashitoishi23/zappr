@@ -9,7 +9,7 @@ import (
 	"time"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
-	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models/view"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"gopkg.in/validator.v2"
