@@ -3,7 +3,6 @@ package userservice
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -35,6 +34,10 @@ type zapprJWTClaims struct {
 
 func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (string, error) {
 
+	if userEmail == "" {
+		return "", errors.New(constants.INVALID_MODEL)
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, zapprJWTClaims{
 		userEmail,
 		jwt.StandardClaims{
@@ -61,7 +64,7 @@ func (s *userService) ValidateLogin(_ context.Context, jwtToken string) bool {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC) 
 		
 		if !ok {
-			return nil, fmt.Errorf("unauthorized attempt")
+			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 		}
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
 		return []byte(os.Getenv("JWT_SIGNING_KEY")), nil

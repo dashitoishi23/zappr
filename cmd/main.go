@@ -9,8 +9,10 @@ import (
 	"syscall"
 
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
+	userservicemiddlewares "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/middlewares"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
+	"github.com/go-kit/log"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/oklog/oklog/pkg/group"
@@ -28,11 +30,20 @@ func main() {
 		httpAddr = net.JoinHostPort("localhost", "9000");
 	)
 
+	var logger log.Logger
+	{
+		logger = log.NewLogfmtLogger(os.Stderr)
+		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+		logger = log.With(logger, "caller", log.DefaultCaller)
+	}
+
 	var (
 		service = userservice.NewUserService()
-		endpoint = userendpoint.New(service)
+		endpoint = userendpoint.New(service, logger)
 		httpHandler = usertransport.NewHttpHandler(endpoint)
 	)
+
+	userservicemiddlewares.LoggingMiddleware(logger)(service)
 
 	var g group.Group
 	{
@@ -53,7 +64,7 @@ func main() {
 			signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 			select {
 			case sig := <- c:
-				return fmt.Errorf("Received signal %s", sig)
+				return fmt.Errorf("received signal %s", sig)
 			case <- cancelInterrupt:
 				return nil
 			}

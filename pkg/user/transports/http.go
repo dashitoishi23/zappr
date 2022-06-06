@@ -13,7 +13,6 @@ import (
 	"github.com/urfave/negroni"
 )
 func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
-
 	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
 		decodeGenerateTokenHTTPRequest,

@@ -3,9 +3,11 @@ package userendpoint
 import (
 	"context"
 
+	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models/view"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/log"
 )
 
 type Set struct {
@@ -14,11 +16,34 @@ type Set struct {
 	SignupUser endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
-func New(svc userservice.UserService) Set {
+func New(svc userservice.UserService, logger log.Logger) Set {
+
+	var generateTokenEndpoint endpoint.Endpoint
+	{
+		generateTokenEndpoint = GenerateTokenEndpoint(svc)
+
+		generateTokenEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "generateToken"))(generateTokenEndpoint)
+
+	}
+
+	var validateLoginEndpoint endpoint.Endpoint
+	{
+		validateLoginEndpoint = ValidateLoginEndpoint(svc)
+
+		validateLoginEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "validateToken"))(validateLoginEndpoint)
+	}
+
+	var signupUserEndpoint endpoint.Endpoint
+	{
+		signupUserEndpoint = SignupUserEndpoint(svc)
+
+		signupUserEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "signupUser"))(signupUserEndpoint)
+	}
+
 	return Set{
-		GenerateToken: GenerateTokenEndpoint(svc),
-		ValidateLogin: ValidateLoginEndpoint(svc),
-		SignupUser: SignupUserEndpoint(svc),
+		GenerateToken: generateTokenEndpoint,
+		ValidateLogin: validateLoginEndpoint,
+		SignupUser: signupUserEndpoint,
 	}
 }
 
