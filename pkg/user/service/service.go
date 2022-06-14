@@ -3,12 +3,14 @@ package userservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
-	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models/view"
+	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"gopkg.in/validator.v2"
@@ -23,11 +25,13 @@ type UserService interface {
 
 type userService struct {
 	db *gorm.DB
+	repository util.IRepository[models.User]
 } //class-like skeleton in Go
 
 func NewUserService(database *gorm.DB) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		db : database,
+		repository: util.Repository[models.User](database),
 	} //returns an address which points to userService to make changes in original memory address
 }
 
@@ -37,7 +41,6 @@ type zapprJWTClaims struct {
 }
 
 func (s *userService) GenerateJWTToken(_ context.Context, userEmail string) (string, error) {
-
 	if userEmail == "" {
 		return "", errors.New(constants.INVALID_MODEL)
 	}
@@ -88,6 +91,14 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 	}
 
 	newUser.Identifier = uuid.New().String()
+
+	tx := s.repository.Add(newUser)
+
+	if tx.Error != nil {
+		return newUser, tx.Error
+	}
+
+	fmt.Print(tx.RowsAffected)
 
 	return newUser, nil
 }
