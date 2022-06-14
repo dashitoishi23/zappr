@@ -43,7 +43,7 @@ func main() {
 	if dbErr == nil {
 		fmt.Print(db.Statement.Vars...)
 		var (
-			service = userservice.NewUserService()
+			service = userservice.NewUserService(db)
 			endpoint = userendpoint.New(service, logger)
 			httpHandler = usertransport.NewHttpHandler(endpoint)
 		)

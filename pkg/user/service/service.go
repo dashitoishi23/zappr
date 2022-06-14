@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"gopkg.in/validator.v2"
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -21,10 +22,13 @@ type UserService interface {
 }
 
 type userService struct {
+	db *gorm.DB
 } //class-like skeleton in Go
 
-func NewUserService() UserService { //makes userService struct implement UserService interface
-	return &userService{} //returns an address which points to userService to make changes in original memory address
+func NewUserService(database *gorm.DB) UserService { //makes userService struct implement UserService interface
+	return &userService{
+		db : database,
+	} //returns an address which points to userService to make changes in original memory address
 }
 
 type zapprJWTClaims struct {
