@@ -92,7 +92,7 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 
 	newUser.Identifier = uuid.New().String()
 
-	tx := s.repository.Add(newUser)
+	tx := s.repository.Add(&newUser)
 
 	if tx.Error != nil {
 		return newUser, tx.Error

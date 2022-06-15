@@ -16,17 +16,17 @@ type IRepository[T any] interface {
 	// Delete(identifier string) *gorm.DB
 }
 
-type repository struct {
+type repository[T any] struct {
 	db *gorm.DB
 }
 
 func Repository[T any](database *gorm.DB) IRepository[T]{
-	return &repository{
+	return &repository[T]{
 		db: database,
 	}
 }
 
-func(r *repository) Add(newEntity any) *gorm.DB{
+func(r *repository[T]) Add(newEntity any) *gorm.DB{
 	tx := r.db.Create(newEntity)
 	fmt.Print(tx.RowsAffected)
 	return tx

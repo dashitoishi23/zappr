@@ -43,25 +43,44 @@ func main() {
 	if dbErr == nil {
 		fmt.Print(db.Statement.Vars...)
 		var (
-			service = userservice.NewUserService(db)
-			endpoint = userendpoint.New(service, logger)
-			httpHandler = usertransport.NewHttpHandler(endpoint)
+			userService = userservice.NewUserService(db)
+			endpoint = userendpoint.New(userService, logger)
+			userHttpHandler = usertransport.NewHttpHandler(endpoint)
 		)
-	
-		userservicemiddlewares.LoggingMiddleware(logger)(service)
-	
+		userservicemiddlewares.LoggingMiddleware(logger)(userService)
+
+		// var (
+		// 	tenantService = repository.NewBaseCRUD[tenantmodels.Tenant](db)
+		// 	tenantEndpoint = tenantendpoint.New(tenantService, logger)
+		// 	tenantHttpHandler = tenanttransports.NewHandler(tenantEndpoint)
+		// )
+
+		// fmt.Print(tenantHttpHandler)
+
+		httpListener, err := net.Listen("tcp", httpAddr)
+		fmt.Println(httpListener.Addr().String(), err)
+
+		http.Serve(httpListener, userHttpHandler)
+		// http.Serve(httpListener, tenantHttpHandler)
+
 		var g group.Group
-		{
-			httpListener, err := net.Listen("tcp", httpAddr)
-			fmt.Println(httpListener.Addr().String(), err)
+		// {	
+		// 	g.Add(func() error {
+		// 		fmt.Println(httpAddr)
+		// 		return http.Serve(httpListener, userHttpHandler)
+		// 	})
+		// }
+		// {
+		// 	// httpListener, err := net.Listen("tcp", httpAddr)
+		// 	// fmt.Println(err)
 			
-			g.Add(func() error {
-				fmt.Println(httpAddr)
-				return http.Serve(httpListener, httpHandler)
-			}, func(error){
-				httpListener.Close()
-			})
-		}
+		// 	g.Add(func() error {
+		// 		fmt.Println(httpAddr)
+		// 		return http.Serve(httpListener, tenantHttpHandler)
+		// 	}, func(error){
+		// 		httpListener.Close()
+		// 	})
+		// }
 		{
 			cancelInterrupt := make(chan struct{})
 			g.Add(func() error {
