@@ -1,4 +1,4 @@
-package models
+package usermodels
 
 type User struct {
 	Identifier string `json:"identifier" gorm:"type:text"`

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
-	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/repository"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -25,13 +25,13 @@ type UserService interface {
 
 type userService struct {
 	db *gorm.DB
-	repository util.IRepository[models.User]
+	repository repository.IRepository[models.User]
 } //class-like skeleton in Go
 
 func NewUserService(database *gorm.DB) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		db : database,
-		repository: util.Repository[models.User](database),
+		repository: repository.Repository[models.User](database),
 	} //returns an address which points to userService to make changes in original memory address
 }
 
