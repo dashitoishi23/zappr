@@ -6,13 +6,15 @@ import (
 	"io"
 	"net/http"
 
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	httptransport "github.com/go-kit/kit/transport/http"
-	"github.com/gorilla/mux"
-	"github.com/urfave/negroni"
 )
-func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
+
+func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig {
+	var userServers []commonmodels.HttpServerConfig
+
 	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
 		decodeGenerateTokenHTTPRequest,
@@ -31,18 +33,23 @@ func NewHttpHandler(endpoints userendpoint.Set) http.Handler {
 		util.EncodeHTTPGenericResponse,
 	)
 
-	r := mux.NewRouter()
+	return append(userServers, commonmodels.HttpServerConfig{
+		NeedsAuth: false,
+		Server: tokenHandler,
+		Route: "/user/token",
+		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: loginHandler,
+		Route: "/user/login",
+		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: false,
+		Server: signupuserHandler,
+		Route: "/user",
+		Methods: []string{"POST"},
+	})
 
-	r.Handle("/token", tokenHandler).Methods("POST")
-
-	r.Handle("/login", loginHandler).Methods("POST").Handler(negroni.New(
-		negroni.HandlerFunc(util.AuthHandler),
-		negroni.Wrap(loginHandler),
-	))
-
-	r.Handle("/signup", signupuserHandler).Methods("POST")
-
-	return r
 }
 
 func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
