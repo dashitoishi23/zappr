@@ -12,7 +12,6 @@ import (
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/repository"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
@@ -89,8 +88,6 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 	if errs := validator.Validate(newUser); errs != nil {
 		return newUser, errors.New(constants.INVALID_MODEL)
 	}
-
-	newUser.Identifier = uuid.New().String()
 
 	tx := s.repository.Add(&newUser)
 

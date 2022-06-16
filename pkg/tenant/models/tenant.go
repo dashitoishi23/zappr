@@ -2,7 +2,6 @@ package tenantmodels
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Tenant struct {
@@ -10,8 +9,6 @@ type Tenant struct {
 	Name       string    `json:"name" validate:"nonzero"`
 }
 
-func(t *Tenant) BeforeCreate(tx *gorm.DB) (err error){
+func(t *Tenant) InitFields() {
 	t.Identifier = uuid.New().String()
-
-	return
 }

@@ -11,8 +11,6 @@ type User struct {
 	Locale     string `json:"locale" validate:"nonzero" gorm:"type:text"`
 }
 
-func (u *User) BeforeCreate(err error) {
+func (u *User) InitFields() {
 	u.Identifier = uuid.New().String()
-
-	return
 }

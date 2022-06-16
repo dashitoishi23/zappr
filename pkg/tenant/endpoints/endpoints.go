@@ -30,6 +30,8 @@ func CreateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.E
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(CreateTenantRequest)
 
+		req.NewTenant.InitFields()
+
 		resp, err := s.Create(req.NewTenant)
 
 		if err != nil {

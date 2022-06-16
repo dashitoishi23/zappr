@@ -71,6 +71,7 @@ func ValidateLoginEndpoint(s userservice.UserService) endpoint.Endpoint{
 func SignupUserEndpoint(s userservice.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(SignupUserRequest)
+		req.NewUser.InitFields()
 		resp, err := s.SignupUser(ctx, req.NewUser)
 
 		return SignupUserResponse{resp}, err
