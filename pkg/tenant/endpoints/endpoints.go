@@ -3,9 +3,9 @@ package tenantendpoint
 import (
 	"context"
 
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/repository"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
 )

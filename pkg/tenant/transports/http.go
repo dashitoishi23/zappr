@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 

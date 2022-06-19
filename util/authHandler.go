@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
+	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	"github.com/golang-jwt/jwt"
 )
 

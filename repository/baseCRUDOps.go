@@ -3,7 +3,7 @@ package repository
 import (
 	"errors"
 
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )

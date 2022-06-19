@@ -8,9 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/repository"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	database "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/database"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
@@ -19,6 +17,8 @@ import (
 	userservicemiddlewares "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/middlewares"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/log"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
@@ -34,7 +34,7 @@ func main() {
 	}
 	
 	var (
-		httpAddr = net.JoinHostPort("localhost", "9000");
+		httpAddr = fmt.Sprintf("0.0.0.0:%v", 9000)
 	)
 
 	var logger log.Logger

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/repository"
+	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"github.com/golang-jwt/jwt"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"

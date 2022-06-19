@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
-	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/util"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
+	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 

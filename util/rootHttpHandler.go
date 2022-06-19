@@ -3,7 +3,7 @@ package util
 import (
 	"net/http"
 
-	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"github.com/gorilla/mux"
 	"github.com/urfave/negroni"
 )

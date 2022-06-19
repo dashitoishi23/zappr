@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 
-	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/models"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 )
 
 func JsonEncoder[T any](obj *commonmodels.Entity[T]) ([]byte, error) {

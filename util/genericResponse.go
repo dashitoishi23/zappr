@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/cmd/constants"
+	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 )
 
 func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
