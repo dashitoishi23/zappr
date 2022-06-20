@@ -6,7 +6,7 @@ WORKDIR /app
 
 RUN mkdir ./pkg
 
-COPY pkg/* /app/pkg
+COPY pkg/* /app/pkg/
 
 COPY . ./
 
