@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  zappr:
+    container_name: zappr
+    build:
+      context: .
+    ports:
+      - "9000:9000"
+    networks:
+      - zappr
+    volumes:
+      - zappr:/app:rw
+
+networks:
+  zappr:
+
+volumes:
+  zappr:
+    
