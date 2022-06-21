@@ -17,7 +17,7 @@ type pagedResponse[T any] struct {
 type BaseCRUD[T any] interface {
 	Create(newEntity T) (T, error)
 	GetFirst(obj interface{}) (T, error)
-	// GetAll(dest interface{}, conds ...interface{}) ([]T, error)
+	GetAll() ([]T, error)
 	// GetPaged(skip int, take int, dest interface{}, conds ...interface{}) (pagedResponse[T], error)
 	// Update(updatedEntity T) (T, error)
 	// Delete(identifier string) bool
@@ -51,6 +51,16 @@ func (b *baseCRUD[T]) Create(obj T) (T, error) {
 
 func (b *baseCRUD[T]) GetFirst(obj interface{}) (T, error) {
 	result, err := b.repository.FindFirst(obj)
+
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
+func (b *baseCRUD[T]) GetAll() ([]T, error) {
+	result, err := b.repository.GetAll()
 
 	if err != nil {
 		return result, err

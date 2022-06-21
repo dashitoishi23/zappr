@@ -9,7 +9,7 @@ import (
 type IRepository[T any] interface {
 	Add(T any) *gorm.DB
 	// AddBulk(newEntity []T) *gorm.DB
-	// Find() *gorm.DB
+	GetAll() ([]T, error)
 	FindFirst(T interface{}) (T, error)
 	// FindByConditions(dest interface{}, conds ...interface{}) *gorm.DB
 	// Update(column string, value interface{}) *gorm.DB
@@ -42,6 +42,17 @@ func(r *repository[T]) FindFirst(currentEntity interface{}) (T, error){
 
 	return result, nil
 
+}
+
+func(r *repository[T]) GetAll() ([]T, error) {
+	var result []T
+	tx := r.db.Find(&result)
+
+	if tx.Error != nil {
+		return result, tx.Error
+	}
+
+	return result, nil
 }
 
 

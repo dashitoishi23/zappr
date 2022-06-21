@@ -3,6 +3,7 @@ package tenanttransports
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
@@ -26,6 +27,12 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		util.EncodeHTTPGenericResponse,
 	)
 
+	getAllTenantsHandler := httptransport.NewServer(
+		endpoints.GetAllTenants,
+		decodeGetAllTenantsRequest,
+		util.EncodeHTTPGenericResponse,
+	)
+
 	return append(tenantServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: createHandler,
@@ -35,6 +42,11 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		NeedsAuth: true,
 		Server: findFirstHandler,
 		Route: "/tenant",
+		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: getAllTenantsHandler,
+		Route: "/tenant/all",
 		Methods: []string{"GET"},
 	})
 }
@@ -64,6 +76,27 @@ func decodeFindFirstTenantRequest(_ context.Context, r *http.Request) (interface
 	decodedReq.DisallowUnknownFields()
 
 	err := decodedReq.Decode(&req)
+
+	if err != nil {
+		return req, err
+	}
+
+	return req, nil
+
+}
+
+func decodeGetAllTenantsRequest(_ context.Context, r *http.Request) (interface{}, error){
+	var req tenantendpoint.GetAllTenantsRequest
+
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
+
+	if err == io.EOF {
+		return req, nil
+	}
 
 	if err != nil {
 		return req, err

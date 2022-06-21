@@ -13,6 +13,7 @@ import (
 type Set struct {
 	CreateTenant endpoint.Endpoint
 	FindFirstTenant endpoint.Endpoint
+	GetAllTenants endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
@@ -28,9 +29,16 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 		findFirstTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "findFirstTenant"))(findFirstTenantEndpoint)
 	}
 
+	var getAllTenantsEndpoint endpoint.Endpoint
+	{
+		getAllTenantsEndpoint = GetAllTenantsEndpoint(svc)
+		getAllTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getAllTenants"))(getAllTenantsEndpoint)
+	}
+
 	return Set{
 		CreateTenant: createTenantEndpoint,
 		FindFirstTenant: findFirstTenantEndpoint,
+		GetAllTenants: getAllTenantsEndpoint,
 	}
 }
 
@@ -67,6 +75,21 @@ func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoin
 	}
 }
 
+func GetAllTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		var resp []tenantmodels.Tenant
+
+		resp, err = s.GetAll()
+
+		if err != nil {
+			return GetAllTenantsResponse{resp}, err
+		}
+
+		return GetAllTenantsResponse{resp}, nil
+
+	}
+}
+
 type CreateTenantRequest struct {
 	NewTenant tenantmodels.Tenant `json:"newTenant"`
 }
@@ -81,4 +104,12 @@ type FindFirstTenantRequest struct {
 
 type FindFirstTenantResponse struct {
 	CurrentTenant tenantmodels.Tenant `json:"currentTenant"`
+}
+
+type GetAllTenantsRequest struct {
+
+}
+
+type GetAllTenantsResponse struct {
+	Tenants []tenantmodels.Tenant `json:"tenants"`
 }
