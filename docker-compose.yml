@@ -11,10 +11,28 @@ services:
       - zappr
     volumes:
       - zappr:/app:rw
+  
+  postgres:
+    container_name: postgres
+    image: postgres:14.3
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=p@ssw0rd
+      - POSTGRES_DB=zappr
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data 
 
 networks:
   zappr:
+  postgres:
 
 volumes:
   zappr:
+  postgres:
+
     

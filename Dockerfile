@@ -16,4 +16,6 @@ RUN go build -o ./
 
 EXPOSE 9000
 
+EXPOSE 5432
+
 CMD ["./Zappr"]
