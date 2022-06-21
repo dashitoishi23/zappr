@@ -17,7 +17,7 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 
 	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
-		decodeGenerateTokenHTTPRequest,
+		util.DecodeHTTPGenericRequest[userendpoint.GenerateTokenRequest],
 		util.EncodeHTTPGenericResponse,
 	)
 
@@ -29,7 +29,7 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 
 	signupuserHandler := httptransport.NewServer(
 		endpoints.SignupUser,
-		decodeSignupUserRequest,
+		util.DecodeHTTPGenericRequest[userendpoint.SignupUserRequest],
 		util.EncodeHTTPGenericResponse,
 	)
 
@@ -52,22 +52,6 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 
 }
 
-func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
-	var req userendpoint.GenerateTokenRequest
-	
-	decodedReq := json.NewDecoder(r.Body)
-
-	decodedReq.DisallowUnknownFields()
-
-	err := decodedReq.Decode(&req)
-
-	if err == io.EOF{
-		return req, nil	
-	}
-	
-	return req, err
-}
-
 func decodeValidateLoginRequest(_ context.Context, r * http.Request) (interface{}, error){
 	var req userendpoint.ValidateLoginRequest
 
@@ -88,18 +72,6 @@ func decodeValidateLoginRequest(_ context.Context, r * http.Request) (interface{
 	if err == io.EOF{
 		return req, nil	
 	}
-
-	return req, err
-}
-
-func decodeSignupUserRequest(_ context.Context, r *http.Request) (interface{}, error){
-	var req userendpoint.SignupUserRequest
-
-	decodedReq := json.NewDecoder(r.Body)
-
-	decodedReq.DisallowUnknownFields()
-
-	err := decodedReq.Decode(&req)
 
 	return req, err
 }
