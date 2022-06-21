@@ -55,7 +55,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interface{}, error){
 	var req userendpoint.GenerateTokenRequest
 	
-	err := json.NewDecoder(r.Body).Decode(&req)
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
 
 	if err == io.EOF{
 		return req, nil	
@@ -67,7 +71,11 @@ func decodeGenerateTokenHTTPRequest(_ context.Context, r *http.Request) (interfa
 func decodeValidateLoginRequest(_ context.Context, r * http.Request) (interface{}, error){
 	var req userendpoint.ValidateLoginRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
 
 	token := r.Header.Get("Authorization")
 
@@ -87,7 +95,11 @@ func decodeValidateLoginRequest(_ context.Context, r * http.Request) (interface{
 func decodeSignupUserRequest(_ context.Context, r *http.Request) (interface{}, error){
 	var req userendpoint.SignupUserRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
 
 	return req, err
 }

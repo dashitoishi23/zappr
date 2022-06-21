@@ -13,6 +13,7 @@ type User struct {
 	Password   string `json:"password" gorm:"type:text"`
 	IsADUser   bool   `json:"isAdUser" gorm:"type:bool"`
 	Locale     string `json:"locale" validate:"nonzero" gorm:"type:text"`
+	TenantIdentifier string `json:"tenantIdentifier" validate:"nonzero" gorm:"type:text"`
 	CreatedOn time.Time `json:"createdOn" validate:"nonzero"`
 	ModifiedOn *time.Time `json:"modifiedOn"`
 }

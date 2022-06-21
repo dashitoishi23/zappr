@@ -20,18 +20,50 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		util.EncodeHTTPGenericResponse,
 	)
 
+	findFirstHandler := httptransport.NewServer(
+		endpoints.FindFirstTenant,
+		decodeFindFirstTenantRequest,
+		util.EncodeHTTPGenericResponse,
+	)
+
 	return append(tenantServers, commonmodels.HttpServerConfig{
-		NeedsAuth: true,
+		NeedsAuth: false,
 		Server: createHandler,
 		Route: "/tenant",
 		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: findFirstHandler,
+		Route: "/tenant",
+		Methods: []string{"GET"},
 	})
 }
 
 func decodeCreateTenantRequest(_ context.Context, r *http.Request) (interface{}, error){
 	var req tenantendpoint.CreateTenantRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
+
+	if err != nil {
+		return req, err
+	}
+
+	return req, nil
+
+}
+
+func decodeFindFirstTenantRequest(_ context.Context, r *http.Request) (interface{}, error){
+	var req tenantendpoint.FindFirstTenantRequest
+
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
 
 	if err != nil {
 		return req, err

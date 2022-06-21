@@ -13,6 +13,8 @@ func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, respo
 		switch(e.Error()){
 		case constants.INVALID_MODEL:
 			w.WriteHeader(http.StatusBadRequest)
+		case constants.RECORD_NOT_FOUND:
+			w.WriteHeader(http.StatusNotFound)
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 		}
