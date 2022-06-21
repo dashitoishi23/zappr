@@ -50,8 +50,6 @@ func (b *baseCRUD[T]) Create(obj T) (T, error) {
 }
 
 func (b *baseCRUD[T]) GetFirst(obj interface{}) (T, error) {
-	var result T
-
 	result, err := b.repository.FindFirst(obj)
 
 	if err != nil {

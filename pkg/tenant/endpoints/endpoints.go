@@ -2,11 +2,7 @@ package tenantendpoint
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"strings"
 
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -58,17 +54,8 @@ func CreateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.E
 func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var resp tenantmodels.Tenant
-		var reqBody tenantmodels.SearchableTenant
 
 		req := request.(FindFirstTenantRequest)
-
-		reqData := json.NewDecoder(strings.NewReader(request.(string)))
-
-		reqData.DisallowUnknownFields()
-
-		if errs := reqData.Decode(&reqBody); errs != nil {
-			return resp, errors.New(constants.INVALID_MODEL)
-		}
 
 		resp, err = s.GetFirst(req.CurrentTenant)
 

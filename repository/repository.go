@@ -34,7 +34,7 @@ func(r *repository[T]) Add(newEntity any) *gorm.DB{
 
 func(r *repository[T]) FindFirst(currentEntity interface{}) (T, error){
 	var result T
-	tx := r.db.Where(&currentEntity).First(&result)
+	tx := r.db.Where(currentEntity).First(&result)
 
 	if tx.Error != nil {
 		return result, tx.Error
