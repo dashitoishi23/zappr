@@ -59,10 +59,10 @@ func CreateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.E
 		resp, err := s.Create(req.NewTenant)
 
 		if err != nil {
-			return CreateTenantResponse{resp}, err
+			return CreateTenantResponse{resp, err}, err
 		}
 
-		return CreateTenantResponse{resp}, nil
+		return CreateTenantResponse{resp, err}, nil
 
 	}
 }
@@ -76,10 +76,10 @@ func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoin
 		resp, err = s.GetFirst(req.CurrentTenant)
 
 		if err != nil {
-			return FindFirstTenantResponse{resp}, err
+			return FindFirstTenantResponse{resp, err}, err
 		}
 
-		return FindFirstTenantResponse{resp}, nil
+		return FindFirstTenantResponse{resp, err}, nil
 	}
 }
 
@@ -90,10 +90,10 @@ func GetAllTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.
 		resp, err = s.GetAll()
 
 		if err != nil {
-			return GetAllTenantsResponse{resp}, err
+			return GetAllTenantsResponse{resp, err}, err
 		}
 
-		return GetAllTenantsResponse{resp}, nil
+		return GetAllTenantsResponse{resp, err}, nil
 
 	}
 }
@@ -107,10 +107,10 @@ func FindTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.En
 		resp, err = s.Find(req.CurrentTenant)
 
 		if err != nil {
-			return FindTenantsResponse{resp}, err
+			return FindTenantsResponse{resp, err}, err
 		}
 
-		return FindTenantsResponse{resp}, nil
+		return FindTenantsResponse{resp, err}, nil
 
 	}
 }
@@ -121,7 +121,10 @@ type CreateTenantRequest struct {
 
 type CreateTenantResponse struct {
 	NewTenant tenantmodels.Tenant `json:"newTenant"`
+	Err error `json:"-"`
 }
+
+func (c CreateTenantResponse) Failed() error { return c.Err }
 
 type FindFirstTenantRequest struct {
 	CurrentTenant tenantmodels.SearchableTenant `json:"currentTenant"`
@@ -129,7 +132,10 @@ type FindFirstTenantRequest struct {
 
 type FindFirstTenantResponse struct {
 	CurrentTenant tenantmodels.Tenant `json:"currentTenant"`
+	Err error `json:"-"`
 }
+
+func (f FindFirstTenantResponse) Failed() error { return f.Err }
 
 type GetAllTenantsRequest struct {
 
@@ -137,7 +143,10 @@ type GetAllTenantsRequest struct {
 
 type GetAllTenantsResponse struct {
 	Tenants []tenantmodels.Tenant `json:"tenants"`
+	Err error `json:"-"`
 }
+
+func (g GetAllTenantsResponse) Failed() error { return g.Err }
 
 type FindTenantsRequest struct {
 	CurrentTenant tenantmodels.SearchableTenant `json:"currentTenant"`
@@ -145,4 +154,7 @@ type FindTenantsRequest struct {
 
 type FindTenantsResponse struct {
 	CurrentTenant []tenantmodels.Tenant `json:"currentTenant"`
+	Err error `json:"-"`
 }
+
+func (f FindTenantsResponse) Failed() error { return f.Err }

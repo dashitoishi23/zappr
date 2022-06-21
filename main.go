@@ -63,7 +63,7 @@ func main() {
 		var (
 			tenantService = repository.NewBaseCRUD[tenantmodels.Tenant](db)
 			tenantEndpoint = tenantendpoint.New(tenantService, logger)
-			tenantServers = tenanttransports.NewHandler(tenantEndpoint)
+			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
 
 		servers = append(servers, tenantServers...)

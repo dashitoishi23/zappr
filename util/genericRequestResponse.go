@@ -6,25 +6,14 @@ import (
 	"io"
 	"net/http"
 
-	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	"github.com/go-kit/kit/endpoint"
 )
 
 func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(error); ok && e != nil {
-		switch(e.Error()){
-		case constants.INVALID_MODEL:
-			w.WriteHeader(http.StatusBadRequest)
-		case constants.RECORD_NOT_FOUND:
-			w.WriteHeader(http.StatusNotFound)
-		default:
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+	if e, ok := response.(endpoint.Failer); ok && e.Failed() != nil {
+		ErrorEncoder(ctx, e.Failed(), w)
 
-		errResp := make(map[string]string)
-
-		errResp["errMsg"] = e.Error()
-
-		return json.NewEncoder(w).Encode(errResp)
+		return nil
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -15,22 +15,29 @@ import (
 func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig {
 	var userServers []commonmodels.HttpServerConfig
 
+	serverOptions := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(util.ErrorEncoder),
+	}
+
 	tokenHandler := httptransport.NewServer(
 		endpoints.GenerateToken,
 		util.DecodeHTTPGenericRequest[userendpoint.GenerateTokenRequest],
 		util.EncodeHTTPGenericResponse,
+		serverOptions...
 	)
 
 	loginHandler := httptransport.NewServer(
 		endpoints.ValidateLogin,
 		decodeValidateLoginRequest,
 		encodeValidateLoginResponse,
+		serverOptions...
 	)
 
 	signupuserHandler := httptransport.NewServer(
 		endpoints.SignupUser,
 		util.DecodeHTTPGenericRequest[userendpoint.SignupUserRequest],
 		util.EncodeHTTPGenericResponse,
+		serverOptions...
 	)
 
 	return append(userServers, commonmodels.HttpServerConfig{

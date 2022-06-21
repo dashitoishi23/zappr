@@ -53,9 +53,9 @@ func GenerateTokenEndpoint(s userservice.UserService) endpoint.Endpoint{
 		s, err := s.GenerateJWTToken(ctx, req.UserEmail)
 		
 		if err !=nil {
-			return GenerateTokenResponse{"", err.Error()}, err
+			return GenerateTokenResponse{"", err}, err
 		}
-		return GenerateTokenResponse{s, ""}, nil
+		return GenerateTokenResponse{s, err}, nil
 	}
 }
 
@@ -64,7 +64,7 @@ func ValidateLoginEndpoint(s userservice.UserService) endpoint.Endpoint{
 		req := request.(ValidateLoginRequest)
 		resp := s.ValidateLogin(ctx, req.Token)
 
-		return ValidateLoginResponse{resp}, nil
+		return ValidateLoginResponse{resp, err}, nil
 	}
 }
 
@@ -74,7 +74,7 @@ func SignupUserEndpoint(s userservice.UserService) endpoint.Endpoint {
 		req.NewUser.InitFields()
 		resp, err := s.SignupUser(ctx, req.NewUser)
 
-		return SignupUserResponse{resp}, err
+		return SignupUserResponse{resp, err}, err
 	}
 }
 
@@ -84,8 +84,10 @@ type GenerateTokenRequest struct {
 
 type GenerateTokenResponse struct {
 	JWT string `json:"jwt"`
-	Err string `json:"err,omitempty"`
+	Err error `json:"-"`
 } //strongly typed response object
+
+func (g GenerateTokenResponse) Failed() error { return g.Err }
 
 type ValidateLoginRequest struct {
 	Token string `json:"token"`
@@ -93,7 +95,11 @@ type ValidateLoginRequest struct {
 
 type ValidateLoginResponse struct {
 	IsValid bool `json:"isvalid"`
+	Err error `json:"-"`
 }
+
+//Implements the endpoint.Failer interface 
+func (v ValidateLoginResponse) Failed() error { return v.Err }
 
 type SignupUserRequest struct {
 	NewUser models.User `json:"newuser"`
@@ -101,4 +107,7 @@ type SignupUserRequest struct {
 
 type SignupUserResponse struct {
 	NewUser models.User `json:"newuser"`
+	Err error `json:"-"`
 }
+
+func (s SignupUserResponse) Failed() error { return s.Err }

@@ -5,27 +5,35 @@ import (
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/go-kit/log"
 )
 
-func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
+func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.HttpServerConfig {
 	var tenantServers []commonmodels.HttpServerConfig
+
+	serverOptions := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(util.ErrorEncoder),
+	}
 
 	createHandler := httptransport.NewServer(
 		endpoints.CreateTenant,
 		util.DecodeHTTPGenericRequest[tenantendpoint.CreateTenantRequest],
 		util.EncodeHTTPGenericResponse,
+		serverOptions...,
 	)
 
 	findFirstHandler := httptransport.NewServer(
 		endpoints.FindFirstTenant,
 		util.DecodeHTTPGenericRequest[tenantendpoint.FindFirstTenantRequest],
 		util.EncodeHTTPGenericResponse,
+		serverOptions...
 	)
 
 	getAllTenantsHandler := httptransport.NewServer(
 		endpoints.GetAllTenants,
 		util.DecodeHTTPGenericRequest[tenantendpoint.GetAllTenantsRequest],
 		util.EncodeHTTPGenericResponse,
+		serverOptions...
 	)
 
 	findTenantsHandler := httptransport.NewServer(
