@@ -11,7 +11,7 @@ type IRepository[T any] interface {
 	// AddBulk(newEntity []T) *gorm.DB
 	GetAll() ([]T, error)
 	FindFirst(T interface{}) (T, error)
-	// FindByConditions(dest interface{}, conds ...interface{}) *gorm.DB
+	Find(T interface{}) ([]T, error)
 	// Update(column string, value interface{}) *gorm.DB
 	// Delete(identifier string) *gorm.DB
 }
@@ -47,6 +47,17 @@ func(r *repository[T]) FindFirst(currentEntity interface{}) (T, error){
 func(r *repository[T]) GetAll() ([]T, error) {
 	var result []T
 	tx := r.db.Find(&result)
+
+	if tx.Error != nil {
+		return result, tx.Error
+	}
+
+	return result, nil
+}
+
+func(r *repository[T]) Find(currentEntity interface{}) ([]T, error) {
+	var result []T
+	tx := r.db.Where(currentEntity).Find(&result)
 
 	if tx.Error != nil {
 		return result, tx.Error

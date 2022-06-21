@@ -28,6 +28,12 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		util.EncodeHTTPGenericResponse,
 	)
 
+	findTenantsHandler := httptransport.NewServer(
+		endpoints.FindTenants,
+		util.DecodeHTTPGenericRequest[tenantendpoint.FindTenantsRequest],
+		util.EncodeHTTPGenericResponse,
+	)
+
 	return append(tenantServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: createHandler,
@@ -42,6 +48,11 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		NeedsAuth: true,
 		Server: getAllTenantsHandler,
 		Route: "/tenant/all",
+		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: findTenantsHandler,
+		Route: "/tenants/find",
 		Methods: []string{"GET"},
 	})
 }
