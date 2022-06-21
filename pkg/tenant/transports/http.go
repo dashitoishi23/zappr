@@ -1,11 +1,6 @@
 package tenanttransports
 
 import (
-	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -17,19 +12,19 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 
 	createHandler := httptransport.NewServer(
 		endpoints.CreateTenant,
-		decodeCreateTenantRequest,
+		util.DecodeHTTPGenericRequest[tenantendpoint.CreateTenantRequest],
 		util.EncodeHTTPGenericResponse,
 	)
 
 	findFirstHandler := httptransport.NewServer(
 		endpoints.FindFirstTenant,
-		decodeFindFirstTenantRequest,
+		util.DecodeHTTPGenericRequest[tenantendpoint.FindFirstTenantRequest],
 		util.EncodeHTTPGenericResponse,
 	)
 
 	getAllTenantsHandler := httptransport.NewServer(
 		endpoints.GetAllTenants,
-		decodeGetAllTenantsRequest,
+		util.DecodeHTTPGenericRequest[tenantendpoint.GetAllTenantsRequest],
 		util.EncodeHTTPGenericResponse,
 	)
 
@@ -49,59 +44,4 @@ func NewHandler(endpoints tenantendpoint.Set) []commonmodels.HttpServerConfig {
 		Route: "/tenant/all",
 		Methods: []string{"GET"},
 	})
-}
-
-func decodeCreateTenantRequest(_ context.Context, r *http.Request) (interface{}, error){
-	var req tenantendpoint.CreateTenantRequest
-
-	decodedReq := json.NewDecoder(r.Body)
-
-	decodedReq.DisallowUnknownFields()
-
-	err := decodedReq.Decode(&req)
-
-	if err != nil {
-		return req, err
-	}
-
-	return req, nil
-
-}
-
-func decodeFindFirstTenantRequest(_ context.Context, r *http.Request) (interface{}, error){
-	var req tenantendpoint.FindFirstTenantRequest
-
-	decodedReq := json.NewDecoder(r.Body)
-
-	decodedReq.DisallowUnknownFields()
-
-	err := decodedReq.Decode(&req)
-
-	if err != nil {
-		return req, err
-	}
-
-	return req, nil
-
-}
-
-func decodeGetAllTenantsRequest(_ context.Context, r *http.Request) (interface{}, error){
-	var req tenantendpoint.GetAllTenantsRequest
-
-	decodedReq := json.NewDecoder(r.Body)
-
-	decodedReq.DisallowUnknownFields()
-
-	err := decodedReq.Decode(&req)
-
-	if err == io.EOF {
-		return req, nil
-	}
-
-	if err != nil {
-		return req, err
-	}
-
-	return req, nil
-
 }

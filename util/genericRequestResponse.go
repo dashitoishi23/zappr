@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
@@ -28,4 +29,25 @@ func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, respo
 
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(response)
+}
+
+func DecodeHTTPGenericRequest[T any](ctx context.Context,  r *http.Request) (interface{}, error){
+	var req T
+
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
+
+	if err == io.EOF {
+		return req, nil
+	}
+
+	if err != nil {
+		return req, err
+	}
+
+	return req, nil
+
 }
