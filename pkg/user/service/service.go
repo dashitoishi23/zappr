@@ -89,7 +89,7 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 		return newUser, errors.New(constants.INVALID_MODEL)
 	}
 
-	tx := s.repository.Add(&newUser)
+	tx := s.repository.Add(newUser)
 
 	if tx.Error != nil {
 		return newUser, tx.Error

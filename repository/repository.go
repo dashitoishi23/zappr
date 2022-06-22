@@ -7,13 +7,13 @@ import (
 )
 
 type IRepository[T any] interface {
-	Add(T any) *gorm.DB
+	Add(T T) *gorm.DB
 	// AddBulk(newEntity []T) *gorm.DB
 	GetAll() ([]T, error)
 	FindFirst(T interface{}) (T, error)
 	Find(T interface{}) ([]T, error)
-	// Update(column string, value interface{}) *gorm.DB
-	// Delete(identifier string) *gorm.DB
+	Update(T T) (T, error)
+	Delete(currentEntity *T, identifier string) (bool, error)
 }
 
 type repository[T any] struct {
@@ -26,7 +26,7 @@ func Repository[T any](database *gorm.DB) IRepository[T]{
 	}
 }
 
-func(r *repository[T]) Add(newEntity any) *gorm.DB{
+func(r *repository[T]) Add(newEntity T) *gorm.DB{
 	tx := r.db.Create(newEntity)
 	fmt.Print(tx.RowsAffected)
 	return tx
@@ -64,6 +64,26 @@ func(r *repository[T]) Find(currentEntity interface{}) ([]T, error) {
 	}
 
 	return result, nil
+}
+
+func(r *repository[T]) Update(newEntity T) (T, error) {
+	tx := r.db.Save(newEntity)
+
+	if tx.Error != nil {
+		return newEntity, tx.Error
+	}
+
+	return newEntity, nil
+}
+
+func(r *repository[T]) Delete(currentEntity *T, identifier string) (bool, error) {
+	tx := r.db.Delete(currentEntity, identifier)
+
+	if tx.Error != nil {
+		return false, tx.Error
+	}
+
+	return true, nil
 }
 
 

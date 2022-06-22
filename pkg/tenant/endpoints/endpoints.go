@@ -15,6 +15,7 @@ type Set struct {
 	FindFirstTenant endpoint.Endpoint
 	GetAllTenants endpoint.Endpoint
 	FindTenants endpoint.Endpoint
+	UpdateTenant endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
@@ -42,11 +43,18 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 		findTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "findTenants"))(findTenantsEndpoint)
 	}
 
+	var updatedTenantEndpoint endpoint.Endpoint
+	{
+		updatedTenantEndpoint = UpdateTenantEndpint(svc)
+		updatedTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateTenant"))(updatedTenantEndpoint)
+	}
+
 	return Set{
 		CreateTenant: createTenantEndpoint,
 		FindFirstTenant: findFirstTenantEndpoint,
 		GetAllTenants: getAllTenantsEndpoint,
 		FindTenants: findTenantsEndpoint,
+		UpdateTenant: updatedTenantEndpoint,
 	}
 }
 
@@ -115,46 +123,26 @@ func FindTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.En
 	}
 }
 
-type CreateTenantRequest struct {
-	NewTenant tenantmodels.Tenant `json:"newTenant"`
+func UpdateTenantEndpint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UpdateTenantRequest)
+
+		currentEntity := make(chan tenantmodels.Tenant)
+		txnError := make(chan error)
+
+		go s.GetFirstAsync(&tenantmodels.Tenant{
+			Identifier: req.NewTenant.Identifier,
+		}, currentEntity, txnError)
+
+		for{
+			select {			
+			case entity := <-currentEntity:
+				err := <-txnError
+				req.NewTenant.UpdateFields(entity.CreatedOn)
+				resp, _ := s.Update(req.NewTenant)
+				return UpdateTenantResponse{resp, err}, err
+			}
+		}
+	}
 }
 
-type CreateTenantResponse struct {
-	NewTenant tenantmodels.Tenant `json:"newTenant"`
-	Err error `json:"-"`
-}
-
-func (c CreateTenantResponse) Failed() error { return c.Err }
-
-type FindFirstTenantRequest struct {
-	CurrentTenant tenantmodels.SearchableTenant `json:"currentTenant"`
-}
-
-type FindFirstTenantResponse struct {
-	CurrentTenant tenantmodels.Tenant `json:"currentTenant"`
-	Err error `json:"-"`
-}
-
-func (f FindFirstTenantResponse) Failed() error { return f.Err }
-
-type GetAllTenantsRequest struct {
-
-}
-
-type GetAllTenantsResponse struct {
-	Tenants []tenantmodels.Tenant `json:"tenants"`
-	Err error `json:"-"`
-}
-
-func (g GetAllTenantsResponse) Failed() error { return g.Err }
-
-type FindTenantsRequest struct {
-	CurrentTenant tenantmodels.SearchableTenant `json:"currentTenant"`
-}
-
-type FindTenantsResponse struct {
-	CurrentTenant []tenantmodels.Tenant `json:"currentTenant"`
-	Err error `json:"-"`
-}
-
-func (f FindTenantsResponse) Failed() error { return f.Err }
