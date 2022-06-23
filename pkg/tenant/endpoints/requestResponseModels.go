@@ -1,6 +1,9 @@
 package tenantendpoint
 
-import tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
+import (
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
+	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
+)
 
 type CreateTenantRequest struct {
 	NewTenant tenantmodels.Tenant `json:"newTenant"`
@@ -55,3 +58,12 @@ type UpdateTenantResponse struct {
 }
 
 func (u UpdateTenantResponse) Failed() error { return u.Err }
+
+type GetPagedTenantResponse struct {
+	PagedTenants commonmodels.PagedResponse[tenantmodels.Tenant] `json:"pagedTenants"`
+	Err error `json:"-"`
+}
+
+func (g GetPagedTenantResponse) Failed() error { return g.Err }
+
+

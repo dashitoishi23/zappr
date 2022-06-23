@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "net/http/pprof"
+
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	database "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/database"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
@@ -35,6 +37,7 @@ func main() {
 	
 	var (
 		httpAddr = fmt.Sprintf("0.0.0.0:%v", 9000)
+		// httpDebugAddr = fmt.Sprintf("0.0.0.0:%v", 9001)
 	)
 
 	var logger log.Logger

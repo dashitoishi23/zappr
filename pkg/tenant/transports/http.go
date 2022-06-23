@@ -50,6 +50,13 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 		serverOptions...
 	)
 
+	pagedTenantsHandler := httptransport.NewServer(
+		endpoints.PagedTenantsEndpoint,
+		util.DecodeHTTPPagedRequest[tenantendpoint.FindTenantsRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(tenantServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: createHandler,
@@ -75,5 +82,10 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 		Server: updateTenantHandler,
 		Route: "/tenant",
 		Methods: []string{"PUT"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: pagedTenantsHandler,
+		Route: "/tenant/paged/",
+		Methods: []string{"GET"},
 	})
 }

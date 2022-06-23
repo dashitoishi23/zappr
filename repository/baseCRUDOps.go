@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
@@ -14,7 +15,8 @@ type BaseCRUD[T any] interface {
 	GetFirstAsync(obj interface{}, entity chan T, txnError chan error)
 	GetAll() ([]T, error)
 	Find(obj interface{}) ([]T, error)
-	// GetPaged(skip int, take int, dest interface{}, conds ...interface{}) (pagedResponse[T], error)
+	GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
+		txnError chan error)
 	Update(updatedEntity T) (T, error)
 	Delete(currentEntity *T, identifier string) (bool, error)
 }
@@ -100,4 +102,13 @@ func (b *baseCRUD[T]) Delete(currentEntity *T, identifier string) (bool, error) 
 	}
 
 	return result, nil
+}
+
+func (b *baseCRUD[T]) GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
+	txnError chan error) {
+
+	result, err := b.repository.GetPaged(obj, page, size)
+
+	pagedResponse <- result
+	txnError <- err
 }

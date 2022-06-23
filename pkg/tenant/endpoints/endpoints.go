@@ -3,6 +3,7 @@ package tenantendpoint
 import (
 	"context"
 
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -16,6 +17,7 @@ type Set struct {
 	GetAllTenants endpoint.Endpoint
 	FindTenants endpoint.Endpoint
 	UpdateTenant endpoint.Endpoint
+	PagedTenantsEndpoint endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
@@ -49,12 +51,19 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 		updatedTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateTenant"))(updatedTenantEndpoint)
 	}
 
+	var getPagedTenantsEndpoint endpoint.Endpoint
+	{
+		getPagedTenantsEndpoint = GetPagedTenantsEndpoint(svc)
+		getPagedTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "pagedTenantsEndpoint"))(getPagedTenantsEndpoint)
+	}
+
 	return Set{
 		CreateTenant: createTenantEndpoint,
 		FindFirstTenant: findFirstTenantEndpoint,
 		GetAllTenants: getAllTenantsEndpoint,
 		FindTenants: findTenantsEndpoint,
 		UpdateTenant: updatedTenantEndpoint,
+		PagedTenantsEndpoint: getPagedTenantsEndpoint,
 	}
 }
 
@@ -139,9 +148,37 @@ func UpdateTenantEndpint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.En
 			case entity := <-currentEntity:
 				err := <-txnError
 				req.NewTenant.UpdateFields(entity.CreatedOn)
-				resp, _ := s.Update(req.NewTenant)
+				resp, _ := s.Update(req.NewTenant)				
+				close(currentEntity)
+				close(txnError)
 				return UpdateTenantResponse{resp, err}, err
-			}
+			}	
+		}
+	}
+}
+
+func GetPagedTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(commonmodels.PagedRequest[FindTenantsRequest])
+
+		respChan := make(chan commonmodels.PagedResponse[tenantmodels.Tenant])
+		txnError := make(chan error)
+		go s.GetPagedAsync(req.Entity.CurrentTenant, req.Page, req.Size, respChan, txnError)
+
+		for{
+			select {			
+			case entity := <-respChan:
+				err := <-txnError			
+				close(respChan)
+				close(txnError)
+				return commonmodels.PagedResponse[tenantmodels.Tenant]{
+					Items: entity.Items,
+					Page: entity.Page,
+					Size: entity.Size,
+					Pages: entity.Pages,
+					Err: err,
+				}, err
+			}	
 		}
 	}
 }
