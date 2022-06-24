@@ -8,8 +8,10 @@ import (
 	"time"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	state "dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/validator.v2"
@@ -87,6 +89,13 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 
 	if hashErr == nil {
 		jwt, _ := s.generateJWTToken(ctx, existingUser.Email)
+		state := state.GetState()
+
+		state.SetUserContext(commonmodels.UserContext{
+			UserTenant: existingUser.TenantIdentifier,
+			UserIdentifier: existingUser.Identifier,
+		})
+
 		return jwt, nil
 	}
 

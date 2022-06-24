@@ -19,6 +19,7 @@ import (
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/log"
 	"github.com/joho/godotenv"
@@ -45,6 +46,8 @@ func main() {
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
+
+	state.InitState()
 
 	db, dbErr := database.OpenDBConnection(os.Getenv("POSTGRESQL_CONN_STRING"))
 

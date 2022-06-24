@@ -47,7 +47,7 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 
 	var updatedTenantEndpoint endpoint.Endpoint
 	{
-		updatedTenantEndpoint = UpdateTenantEndpint(svc)
+		updatedTenantEndpoint = UpdateTenantEndpoint(svc)
 		updatedTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateTenant"))(updatedTenantEndpoint)
 	}
 
@@ -132,7 +132,7 @@ func FindTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.En
 	}
 }
 
-func UpdateTenantEndpint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func UpdateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(UpdateTenantRequest)
 
