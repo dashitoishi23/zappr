@@ -20,6 +20,8 @@ func setErrorResponseHeader(msg string) int {
 		return http.StatusBadRequest
 	case constants.RECORD_NOT_FOUND:
 		return http.StatusNotFound
+	case constants.UNAUTHORIZED_ATTEMPT:
+		return http.StatusUnauthorized
 	default:
 		return http.StatusInternalServerError
 	}

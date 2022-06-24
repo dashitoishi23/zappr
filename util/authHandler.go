@@ -55,7 +55,12 @@ func tokenValidator(jwtToken string) bool {
 		if !ok {
 			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 		}
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+
+	//Checks against signing algorithm forgery which involves switching to RSA and confusing the verification
+	if t.Method.Alg() != jwt.SigningMethodHS256.Name {
+		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+	} 
+
 		return []byte(os.Getenv("JWT_SIGNING_KEY")), nil
 	})
 

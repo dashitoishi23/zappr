@@ -16,7 +16,6 @@ import (
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	tenanttransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/transports"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
-	userservicemiddlewares "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/middlewares"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
@@ -60,8 +59,6 @@ func main() {
 		)
 
 		servers = append(servers, userServers...)
-
-		userservicemiddlewares.LoggingMiddleware(logger)(userService)
 
 		var (
 			tenantService = repository.NewBaseCRUD[tenantmodels.Tenant](db)
