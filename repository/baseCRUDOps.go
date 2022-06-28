@@ -6,7 +6,6 @@ import (
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"gopkg.in/validator.v2"
-	"gorm.io/gorm"
 )
 
 type BaseCRUD[T any] interface {
@@ -22,14 +21,12 @@ type BaseCRUD[T any] interface {
 }
 
 type baseCRUD[T any] struct {
-	db *gorm.DB
 	repository IRepository[T]
 }
 
-func NewBaseCRUD[T any](database *gorm.DB) BaseCRUD[T] {
+func NewBaseCRUD[T any](repository IRepository[T]) BaseCRUD[T] {
 	return &baseCRUD[T]{
-		db: database,
-		repository: Repository[T](database),
+		repository: repository,
 	}
 }
 

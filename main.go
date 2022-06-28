@@ -16,6 +16,10 @@ import (
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	tenanttransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/transports"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
+	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	rolesendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/endpoints"
+	rolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/models"
+	roletransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/transports"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
@@ -56,20 +60,28 @@ func main() {
 	if dbErr == nil {
 		fmt.Print(db.Statement.Vars...)
 		var (
-			userService = userservice.NewUserService(db)
+			userService = userservice.NewUserService(repository.Repository[usermodels.User](db))
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
-		)
+	)
 
 		servers = append(servers, userServers...)
 
 		var (
-			tenantService = repository.NewBaseCRUD[tenantmodels.Tenant](db)
+			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](db))
 			tenantEndpoint = tenantendpoint.New(tenantService, logger)
 			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
 
 		servers = append(servers, tenantServers...)
+
+		var (
+			roleService = repository.NewBaseCRUD(repository.Repository[rolemodels.Role](db))
+			roleEndpoint = rolesendpoint.New(roleService, logger)
+			roleServers = roletransports.NewHandler(roleEndpoint, logger)
+		)
+
+		servers = append(servers, roleServers...)
 
 		httpHandler := util.RootHttpHandler(servers)
 

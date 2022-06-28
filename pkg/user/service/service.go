@@ -15,7 +15,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/validator.v2"
-	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -25,14 +24,12 @@ type UserService interface {
 }
 
 type userService struct {
-	db *gorm.DB
 	repository repository.IRepository[models.User]
 } //class-like skeleton in Go
 
-func NewUserService(database *gorm.DB) UserService { //makes userService struct implement UserService interface
+func NewUserService(repository repository.IRepository[models.User]) UserService { //makes userService struct implement UserService interface
 	return &userService{
-		db : database,
-		repository: repository.Repository[models.User](database),
+		repository: repository,
 	} //returns an address which points to userService to make changes in original memory address
 }
 
@@ -74,7 +71,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 		return "", errors.New(constants.INVALID_MODEL)
 	}
 
-	existingUser, err := s.repository.FindFirst(&models.User{
+	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
 		Email: currentUser.Email,
 	})
 
