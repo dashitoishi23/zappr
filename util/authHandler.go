@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -49,7 +51,7 @@ func tokenValidator(jwtToken string) bool {
 
 	jwtToken = strings.Split(jwtToken, " ")[1]
 
-	parsedToken, err := jwt.Parse(jwtToken, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(jwtToken, &commonmodels.JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC) 
 		
 		if !ok {
@@ -68,5 +70,14 @@ func tokenValidator(jwtToken string) bool {
 		return false
 	}
 
-	return parsedToken.Valid
+	if claims, ok := parsedToken.Claims.(*commonmodels.JWTClaims); ok && parsedToken.Valid {
+		state.GetState().SetUserContext(commonmodels.UserContext{
+			UserTenant: claims.UserTenant,
+			UserIdentifier: claims.UserIdentifier,
+		})
+
+		return parsedToken.Valid
+	}
+
+	return false
 }

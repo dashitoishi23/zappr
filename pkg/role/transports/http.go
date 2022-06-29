@@ -1,14 +1,14 @@
-package roletransports
+package masterroletransports
 
 import (
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
-	roleendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/endpoints"
+	masterroleendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/endpoints"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/go-kit/log"
 )
 
-func NewHandler(endpoints roleendpoint.Set, logger log.Logger) []commonmodels.HttpServerConfig {
+func NewHandler(endpoints masterroleendpoint.Set, logger log.Logger) []commonmodels.HttpServerConfig {
 	var roleServers []commonmodels.HttpServerConfig
 
 	serverOptions := []httptransport.ServerOption{
@@ -17,75 +17,75 @@ func NewHandler(endpoints roleendpoint.Set, logger log.Logger) []commonmodels.Ht
 
 	createHandler := httptransport.NewServer(
 		endpoints.CreateRole,
-		util.DecodeHTTPGenericRequest[roleendpoint.CreateRoleRequest],
+		util.DecodeHTTPGenericRequest[masterroleendpoint.CreateRoleRequest],
 		util.EncodeHTTPGenericResponse,
 		serverOptions...,
 	)
 
 	findFirstHandler := httptransport.NewServer(
 		endpoints.FindFirstRole,
-		util.DecodeHTTPGenericRequest[roleendpoint.FindFirstRoleRequest],
+		util.DecodeHTTPGenericRequest[masterroleendpoint.FindFirstRoleRequest],
 		util.EncodeHTTPGenericResponse,
-		serverOptions...
+		serverOptions...,
 	)
 
 	getAllRolesHandler := httptransport.NewServer(
 		endpoints.GetAllRoles,
-		util.DecodeHTTPGenericRequest[roleendpoint.GetAllRolesRequest],
+		util.DecodeHTTPGenericRequest[masterroleendpoint.GetAllRolesRequest],
 		util.EncodeHTTPGenericResponse,
-		serverOptions...
+		serverOptions...,
 	)
 
 	findRolesHandler := httptransport.NewServer(
 		endpoints.FindRoles,
-		util.DecodeHTTPGenericRequest[roleendpoint.FindRolesRequest],
+		util.DecodeHTTPGenericRequest[masterroleendpoint.FindRolesRequest],
 		util.EncodeHTTPGenericResponse,
-		serverOptions...
+		serverOptions...,
 	)
 
 	updateRoleHandler := httptransport.NewServer(
 		endpoints.UpdateRole,
-		util.DecodeHTTPGenericRequest[roleendpoint.UpdateRoleRequest],
+		util.DecodeHTTPGenericRequest[masterroleendpoint.UpdateRoleRequest],
 		util.EncodeHTTPGenericResponse,
-		serverOptions...
+		serverOptions...,
 	)
 
 	pagedRolesHandler := httptransport.NewServer(
 		endpoints.PagedRolesEndpoint,
-		util.DecodeHTTPPagedRequest[roleendpoint.FindRolesRequest],
+		util.DecodeHTTPPagedRequest[masterroleendpoint.FindRolesRequest],
 		util.EncodeHTTPGenericResponse,
-		serverOptions...
+		serverOptions...,
 	)
 
 	return append(roleServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
-		Server: createHandler,
-		Route: "/role",
-		Methods: []string{"POST"},
+		Server:    createHandler,
+		Route:     "/role",
+		Methods:   []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
-		Server: findFirstHandler,
-		Route: "/role",
-		Methods: []string{"GET"},
+		Server:    findFirstHandler,
+		Route:     "/role",
+		Methods:   []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
-		Server: getAllRolesHandler,
-		Route: "/role/all",
-		Methods: []string{"GET"},
+		Server:    getAllRolesHandler,
+		Route:     "/role/all",
+		Methods:   []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
-		Server: findRolesHandler,
-		Route: "/role/find",
-		Methods: []string{"GET"},
+		Server:    findRolesHandler,
+		Route:     "/role/find",
+		Methods:   []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
-		Server: updateRoleHandler,
-		Route: "/role",
-		Methods: []string{"PUT"},
+		Server:    updateRoleHandler,
+		Route:     "/role",
+		Methods:   []string{"PUT"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
-		Server: pagedRolesHandler,
-		Route: "/role/paged/",
-		Methods: []string{"GET"},
+		Server:    pagedRolesHandler,
+		Route:     "/role/paged/",
+		Methods:   []string{"GET"},
 	})
 }

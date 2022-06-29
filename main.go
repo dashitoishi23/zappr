@@ -12,14 +12,14 @@ import (
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	database "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/database"
+	masterroleendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/endpoints"
+	masterrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/models"
+	masterroletransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/transports"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	tenanttransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/transports"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
-	rolesendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/endpoints"
-	rolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/models"
-	roletransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/transports"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
@@ -76,9 +76,9 @@ func main() {
 		servers = append(servers, tenantServers...)
 
 		var (
-			roleService = repository.NewBaseCRUD(repository.Repository[rolemodels.Role](db))
-			roleEndpoint = rolesendpoint.New(roleService, logger)
-			roleServers = roletransports.NewHandler(roleEndpoint, logger)
+			roleService = repository.NewBaseCRUD(repository.Repository[masterrolemodels.Role](db))
+			roleEndpoint = masterroleendpoint.New(roleService, logger)
+			roleServers = masterroletransports.NewHandler(roleEndpoint, logger)
 		)
 
 		servers = append(servers, roleServers...)

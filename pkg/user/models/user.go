@@ -3,7 +3,6 @@ package usermodels
 import (
 	"time"
 
-	rolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/models"
 	"github.com/google/uuid"
 )
 
@@ -15,7 +14,6 @@ type User struct {
 	IsADUser   bool   `json:"isAdUser"`
 	Locale     string `json:"locale" validate:"nonzero" `
 	TenantIdentifier string `json:"tenantIdentifier" validate:"nonzero" `
-	Role 			rolemodels.Role  `json:"role" gorm:"foreignKey:UserIdentifier"`
 	CreatedOn time.Time `json:"createdOn" validate:"nonzero"`
 	ModifiedOn *time.Time `json:"modifiedOn"`
 }

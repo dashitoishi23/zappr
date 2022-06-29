@@ -13,6 +13,7 @@ type BaseCRUD[T any] interface {
 	GetFirst(obj interface{}) (T, error)
 	GetFirstAsync(obj interface{}, entity chan T, txnError chan error)
 	GetAll() ([]T, error)
+	GetAllByTenant() ([]T, error)
 	Find(obj interface{}) ([]T, error)
 	GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
 		txnError chan error)
@@ -63,6 +64,16 @@ func (b *baseCRUD[T]) GetFirstAsync(obj interface{}, entity chan T, txnError cha
 
 func (b *baseCRUD[T]) GetAll() ([]T, error) {
 	result, err := b.repository.GetAll()
+
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
+func (b *baseCRUD[T]) GetAllByTenant() ([]T, error) {
+	result, err := b.repository.GetAllByTenant()
 
 	if err != nil {
 		return result, err

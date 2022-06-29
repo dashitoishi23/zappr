@@ -1,10 +1,10 @@
-package rolesendpoint
+package masterroleendpoint
 
 import (
 	"context"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
-	rolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/role/models"
+	masterrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
@@ -12,15 +12,15 @@ import (
 )
 
 type Set struct {
-	CreateRole endpoint.Endpoint
-	FindFirstRole endpoint.Endpoint
-	GetAllRoles endpoint.Endpoint
-	FindRoles endpoint.Endpoint
-	UpdateRole endpoint.Endpoint
+	CreateRole         endpoint.Endpoint
+	FindFirstRole      endpoint.Endpoint
+	GetAllRoles        endpoint.Endpoint
+	FindRoles          endpoint.Endpoint
+	UpdateRole         endpoint.Endpoint
 	PagedRolesEndpoint endpoint.Endpoint
 }
 
-func New(svc repository.BaseCRUD[rolemodels.Role], logger log.Logger) Set {
+func New(svc repository.BaseCRUD[masterrolemodels.Role], logger log.Logger) Set {
 	var createRoleEndpoint endpoint.Endpoint
 	{
 		createRoleEndpoint = CreateRoleEndpoint(svc)
@@ -67,7 +67,7 @@ func New(svc repository.BaseCRUD[rolemodels.Role], logger log.Logger) Set {
 	}
 }
 
-func CreateRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint{
+func CreateRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint{
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(CreateRoleRequest)
 
@@ -84,11 +84,13 @@ func CreateRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoin
 	}
 }
 
-func FindFirstRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint {
+func FindFirstRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		var resp rolemodels.Role
+		var resp masterrolemodels.Role
 
 		req := request.(FindFirstRoleRequest)
+
+		req.CurrentRole.AddTenant()
 
 		resp, err = s.GetFirst(req.CurrentRole)
 
@@ -100,11 +102,11 @@ func FindFirstRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endp
 	}
 }
 
-func GetAllRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint {
+func GetAllRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		var resp []rolemodels.Role
+		var resp []masterrolemodels.Role
 
-		resp, err = s.GetAll()
+		resp, err = s.GetAllByTenant()
 
 		if err != nil {
 			return GetAllRolesResponse{resp, err}, err
@@ -115,11 +117,13 @@ func GetAllRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoi
 	}
 }
 
-func FindRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint {
+func FindRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		var resp []rolemodels.Role
+		var resp []masterrolemodels.Role
 
 		req := request.(FindRolesRequest)
+
+		req.CurrentRole.AddTenant()
 
 		resp, err = s.Find(req.CurrentRole)
 
@@ -132,14 +136,14 @@ func FindRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint
 	}
 }
 
-func UpdateRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint {
+func UpdateRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(UpdateRoleRequest)
 
-		currentEntity := make(chan rolemodels.Role)
+		currentEntity := make(chan masterrolemodels.Role)
 		txnError := make(chan error)
 
-		go s.GetFirstAsync(&rolemodels.Role{
+		go s.GetFirstAsync(&masterrolemodels.Role{
 			Identifier: req.NewRole.Identifier,
 		}, currentEntity, txnError)
 
@@ -157,12 +161,14 @@ func UpdateRoleEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoin
 	}
 }
 
-func GetPagedRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endpoint {
+func GetPagedRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(commonmodels.PagedRequest[FindRolesRequest])
 
-		respChan := make(chan commonmodels.PagedResponse[rolemodels.Role])
+		respChan := make(chan commonmodels.PagedResponse[masterrolemodels.Role])
 		txnError := make(chan error)
+
+		req.Entity.CurrentRole.AddTenant()
 		go s.GetPagedAsync(req.Entity.CurrentRole, req.Page, req.Size, respChan, txnError)
 
 		for{
@@ -171,7 +177,7 @@ func GetPagedRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endp
 				err := <-txnError			
 				close(respChan)
 				close(txnError)
-				return commonmodels.PagedResponse[rolemodels.Role]{
+				return commonmodels.PagedResponse[masterrolemodels.Role]{
 					Items: entity.Items,
 					Page: entity.Page,
 					Size: entity.Size,
@@ -182,4 +188,3 @@ func GetPagedRolesEndpoint(s repository.BaseCRUD[rolemodels.Role]) endpoint.Endp
 		}
 	}
 }
-

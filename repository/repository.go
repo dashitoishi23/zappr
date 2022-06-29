@@ -5,12 +5,14 @@ import (
 	"math"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"gorm.io/gorm"
 )
 
 type IRepository[T any] interface {
 	Add(T T) *gorm.DB
 	GetAll() ([]T, error)
+	GetAllByTenant() ([]T, error)
 	FindFirst(T interface{}) (T, error)
 	Find(T interface{}) ([]T, error)
 	GetPaged(T interface{}, page int, size int) (commonmodels.PagedResponse[T], error)
@@ -56,6 +58,21 @@ func(r *repository[T]) GetAll() ([]T, error) {
 
 	return result, nil
 }
+
+func(r *repository[T]) GetAllByTenant() ([]T, error) {
+	var result []T
+	tx := r.db.Where(map[string]interface{}{
+		"TenantIdentifier": state.GetState().UserContext.UserTenant,
+	}).Find(&result)
+
+	if tx.Error != nil {
+		return result, tx.Error
+	}
+
+	return result, nil
+}
+
+
 
 func(r *repository[T]) Find(currentEntity interface{}) ([]T, error) {
 	var result []T
