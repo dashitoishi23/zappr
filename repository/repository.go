@@ -17,7 +17,7 @@ type IRepository[T any] interface {
 	Find(T interface{}) ([]T, error)
 	GetPaged(T interface{}, page int, size int) (commonmodels.PagedResponse[T], error)
 	Update(T T) (T, error)
-	Delete(currentEntity *T, identifier string) (bool, error)
+	Delete(currentEntity interface{}) (bool, error)
 }
 
 type repository[T any] struct {
@@ -95,8 +95,8 @@ func(r *repository[T]) Update(newEntity T) (T, error) {
 	return newEntity, nil
 }
 
-func(r *repository[T]) Delete(currentEntity *T, identifier string) (bool, error) {
-	tx := r.db.Delete(currentEntity, identifier)
+func(r *repository[T]) Delete(currentEntity interface{}) (bool, error) {
+	tx := r.db.Delete(currentEntity)
 
 	if tx.Error != nil {
 		return false, tx.Error
@@ -113,7 +113,6 @@ func(r *repository[T]) GetPaged(currentEntity interface{}, page int, size int) (
 	//Since somehow slices change length EVEN WHEN YOU READ THEM LMAO
 	resultOfDBOp := len(result)
 
-	//SAME INSANITY AS LINE 96
 	if skip > resultOfDBOp {
 		skip = resultOfDBOp
 	}

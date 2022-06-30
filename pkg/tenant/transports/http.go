@@ -36,6 +36,13 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 		serverOptions...
 	)
 
+	getByIdHandler := httptransport.NewServer(
+		endpoints.GetTenantById,
+		util.DecodeGenericHTTPIdentifierRequest,
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	findTenantsHandler := httptransport.NewServer(
 		endpoints.FindTenants,
 		util.DecodeHTTPGenericRequest[tenantendpoint.FindTenantsRequest],
@@ -51,8 +58,15 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 	)
 
 	pagedTenantsHandler := httptransport.NewServer(
-		endpoints.PagedTenantsEndpoint,
+		endpoints.PagedTenants,
 		util.DecodeHTTPPagedRequest[tenantendpoint.FindTenantsRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
+	deleteTenantHandler := httptransport.NewServer(
+		endpoints.DeleteTenant,
+		util.DecodeGenericHTTPIdentifierRequest,
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
@@ -79,6 +93,11 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 		Methods: []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
+		Server: getByIdHandler,
+		Route: "/tenant/{identifier}",
+		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
 		Server: updateTenantHandler,
 		Route: "/tenant",
 		Methods: []string{"PUT"},
@@ -87,5 +106,10 @@ func NewHandler(endpoints tenantendpoint.Set, logger log.Logger) []commonmodels.
 		Server: pagedTenantsHandler,
 		Route: "/tenant/paged/",
 		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: deleteTenantHandler,
+		Route: "/tenant/{identifier}",
+		Methods: []string{"DELETE"},
 	})
 }

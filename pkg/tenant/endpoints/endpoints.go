@@ -15,9 +15,11 @@ type Set struct {
 	CreateTenant endpoint.Endpoint
 	FindFirstTenant endpoint.Endpoint
 	GetAllTenants endpoint.Endpoint
+	GetTenantById endpoint.Endpoint
 	FindTenants endpoint.Endpoint
 	UpdateTenant endpoint.Endpoint
-	PagedTenantsEndpoint endpoint.Endpoint
+	PagedTenants endpoint.Endpoint
+	DeleteTenant endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
@@ -45,6 +47,12 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 		findTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "findTenants"))(findTenantsEndpoint)
 	}
 
+	var getTenantByIdEndpoint endpoint.Endpoint
+	{
+		getTenantByIdEndpoint = GetTenantByIdEndpoint(svc)
+		getTenantByIdEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getTenantById"))(getTenantByIdEndpoint)
+	}
+
 	var updatedTenantEndpoint endpoint.Endpoint
 	{
 		updatedTenantEndpoint = UpdateTenantEndpoint(svc)
@@ -57,13 +65,21 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 		getPagedTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "pagedTenantsEndpoint"))(getPagedTenantsEndpoint)
 	}
 
+	var deleteTenantEndpoint endpoint.Endpoint
+	{
+		deleteTenantEndpoint = DeleteTenantEndpoint(svc)
+		deleteTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "deleteTenant"))(deleteTenantEndpoint)
+	}
+
 	return Set{
 		CreateTenant: createTenantEndpoint,
 		FindFirstTenant: findFirstTenantEndpoint,
 		GetAllTenants: getAllTenantsEndpoint,
+		GetTenantById: getTenantByIdEndpoint,
 		FindTenants: findTenantsEndpoint,
 		UpdateTenant: updatedTenantEndpoint,
-		PagedTenantsEndpoint: getPagedTenantsEndpoint,
+		PagedTenants: getPagedTenantsEndpoint,
+		DeleteTenant: deleteTenantEndpoint,
 	}
 }
 
@@ -112,6 +128,20 @@ func GetAllTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.
 
 		return GetAllTenantsResponse{resp, err}, nil
 
+	}
+}
+
+func GetTenantByIdEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		var resp tenantmodels.Tenant
+
+		req := request.(string)
+
+		resp, err = s.GetFirst(&tenantmodels.Tenant{
+			Identifier: req,
+		})
+
+		return resp, err
 	}
 }
 
@@ -180,6 +210,18 @@ func GetPagedTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoin
 				}, err
 			}	
 		}
+	}
+}
+
+func DeleteTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(string)
+
+		resp, err := s.Delete(&tenantmodels.Tenant{
+			Identifier: req,
+		})
+
+		return resp, err
 	}
 }
 

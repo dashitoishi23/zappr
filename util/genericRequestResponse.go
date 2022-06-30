@@ -3,10 +3,13 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"github.com/go-kit/kit/endpoint"
 )
@@ -20,6 +23,20 @@ func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, respo
 
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(response)
+}
+
+func DecodeGenericHTTPIdentifierRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	path := r.URL.Path
+
+	parts := strings.Split(path, "/")
+
+	if len(parts) <= 1 {
+		return nil, errors.New(constants.RECORD_NOT_FOUND)
+	} else if parts[2] == "" {
+		return nil, errors.New(constants.RECORD_NOT_FOUND)
+	}
+
+	return parts[2], nil
 }
 
 func DecodeHTTPPagedRequest[T any](ctx context.Context, r *http.Request) (interface{}, error){

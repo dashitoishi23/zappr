@@ -18,7 +18,7 @@ type BaseCRUD[T any] interface {
 	GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
 		txnError chan error)
 	Update(updatedEntity T) (T, error)
-	Delete(currentEntity *T, identifier string) (bool, error)
+	Delete(currentEntity interface{}) (bool, error)
 }
 
 type baseCRUD[T any] struct {
@@ -102,8 +102,8 @@ func (b *baseCRUD[T]) Update(currentEntity T) (T, error) {
 	return result, nil
 }
 
-func (b *baseCRUD[T]) Delete(currentEntity *T, identifier string) (bool, error) {
-	result, err := b.repository.Delete(currentEntity, identifier)
+func (b *baseCRUD[T]) Delete(currentEntity interface{}) (bool, error) {
+	result, err := b.repository.Delete(currentEntity)
 
 	if err != nil {
 		return false, err
