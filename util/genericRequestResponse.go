@@ -32,11 +32,11 @@ func DecodeGenericHTTPIdentifierRequest(ctx context.Context, r *http.Request) (i
 
 	if len(parts) <= 1 {
 		return nil, errors.New(constants.RECORD_NOT_FOUND)
-	} else if parts[2] == "" {
+	} else if parts[len(parts) - 1] == "" {
 		return nil, errors.New(constants.RECORD_NOT_FOUND)
 	}
 
-	return parts[2], nil
+	return parts[len(parts) - 1], nil
 }
 
 func DecodeHTTPPagedRequest[T any](ctx context.Context, r *http.Request) (interface{}, error){

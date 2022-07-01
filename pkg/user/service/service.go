@@ -66,6 +66,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 
 	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
 		Email: currentUser.Email,
+		TenantIdentifier: currentUser.TenantIdentifier,
 	})
 
 	if err != nil {
