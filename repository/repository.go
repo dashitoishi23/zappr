@@ -31,7 +31,7 @@ func Repository[T any](database *gorm.DB) IRepository[T]{
 }
 
 func(r *repository[T]) Add(newEntity T) *gorm.DB{
-	tx := r.db.Create(newEntity)
+	tx := r.db.Create(&newEntity)
 	fmt.Print(tx.RowsAffected)
 	return tx
 }

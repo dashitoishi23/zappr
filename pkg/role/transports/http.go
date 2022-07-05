@@ -58,7 +58,7 @@ func NewHandler(endpoints masterroleendpoint.Set, logger log.Logger) []commonmod
 	)
 
 	return append(roleServers, commonmodels.HttpServerConfig{
-		NeedsAuth: false,
+		NeedsAuth: true,
 		Server:    createHandler,
 		Route:     "/role",
 		Methods:   []string{"POST"},

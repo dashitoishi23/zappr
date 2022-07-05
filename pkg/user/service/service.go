@@ -9,7 +9,9 @@ import (
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
+	masterrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/models"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
@@ -23,11 +25,14 @@ type UserService interface {
 
 type userService struct {
 	repository repository.IRepository[models.User]
+	roleRepository repository.IRepository[masterrolemodels.Role]
 } //class-like skeleton in Go
 
-func NewUserService(repository repository.IRepository[models.User]) UserService { //makes userService struct implement UserService interface
+func NewUserService(repository repository.IRepository[models.User], 
+	roleRepository repository.IRepository[masterrolemodels.Role]) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		repository: repository,
+		roleRepository: roleRepository,
 	} //returns an address which points to userService to make changes in original memory address
 }
 
@@ -47,7 +52,24 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 		newUser.Password = string(hashedPassword)
 	}
 
+	role, roleErr := s.roleRepository.FindFirst(masterrolemodels.SearchableRole{
+	Name: "Normal User",
+	TenantIdentifier: newUser.TenantIdentifier,
+	})
+
+	if roleErr != nil {
+		return newUser, roleErr
+	}
+	
+	newUser.Role = userrolemodels.UserRole{
+		UserIdentifier: newUser.Identifier,
+		RoleIdentifier: role.Identifier,
+	}
+
+	newUser.Role.InitFields()
+
 	tx := s.repository.Add(newUser)
+
 
 	if tx.Error != nil {
 		return newUser, tx.Error

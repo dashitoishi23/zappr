@@ -60,7 +60,8 @@ func main() {
 	if dbErr == nil {
 		fmt.Print(db.Statement.Vars...)
 		var (
-			userService = userservice.NewUserService(repository.Repository[usermodels.User](db))
+			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
+		repository.Repository[masterrolemodels.Role](db))
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
 	)
