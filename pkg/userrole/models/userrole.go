@@ -4,12 +4,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type UserRole struct {
 	Identifier     string    `json:"identifier" gorm:"primaryKey"`
 	UserIdentifier string    `json:"userIdentifier"`
 	RoleIdentifier string    `json:"roleIdentifier"`
+	Scopes 			pq.StringArray `json:"scopes" gorm:"type:text[]"`
 	CreatedOn      time.Time `json:"createdOn"`
 	ModifiedOn     time.Time `json:"modifiedOn"`
 }

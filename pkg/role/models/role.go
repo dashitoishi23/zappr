@@ -5,6 +5,7 @@ import (
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type Role struct {
@@ -13,6 +14,7 @@ type Role struct {
 	CreatedOn        time.Time `json:"createdOn" validate:"nonzero"`
 	ModifiedOn       time.Time `json:"modifiedOn"`
 	TenantIdentifier string `json:"tenantIdentifier" validate:"nonzero"`
+	Scopes 			pq.StringArray `json:"scopes" validate:"nonzero" gorm:"type:text[]"`
 }
 
 func (r *Role) InitFields() {

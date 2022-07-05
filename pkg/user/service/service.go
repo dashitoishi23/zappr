@@ -14,6 +14,7 @@ import (
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"github.com/golang-jwt/jwt"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/validator.v2"
 )
@@ -60,10 +61,15 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 	if roleErr != nil {
 		return newUser, roleErr
 	}
+
+	var scopes []string
+
+	role.Scopes.Scan(pq.Array(&scopes))
 	
 	newUser.Role = userrolemodels.UserRole{
 		UserIdentifier: newUser.Identifier,
 		RoleIdentifier: role.Identifier,
+		Scopes: role.Scopes,
 	}
 
 	newUser.Role.InitFields()
@@ -86,7 +92,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 		return "", errors.New(constants.INVALID_MODEL)
 	}
 
-	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
+	existingUser, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
 		Email: currentUser.Email,
 		TenantIdentifier: currentUser.TenantIdentifier,
 	})
@@ -95,7 +101,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 		if err.Error() == constants.RECORD_NOT_FOUND {
 			return "", errors.New(constants.RECORD_NOT_FOUND)
 		}
-		return "", errors.New(constants.UNAUTHORIZED_ATTEMPT)
+		return "", err
 	}
 
 	hashErr := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(currentUser.Password))

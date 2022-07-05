@@ -12,9 +12,12 @@ import (
 type IRepository[T any] interface {
 	Add(T T) *gorm.DB
 	GetAll() ([]T, error)
+	GetAllByAssociation(associationName string) ([]T, error)
 	GetAllByTenant() ([]T, error)
 	FindFirst(T interface{}) (T, error)
+	FindFirstByAssociation(associationName string, T interface{}) (T, error)
 	Find(T interface{}) ([]T, error)
+	FindByAssociation(associationName string, T interface{}) ([]T, error)
 	GetPaged(T interface{}, page int, size int) (commonmodels.PagedResponse[T], error)
 	Update(T T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
@@ -48,6 +51,13 @@ func(r *repository[T]) FindFirst(currentEntity interface{}) (T, error){
 
 }
 
+func(r *repository[T]) FindFirstByAssociation(associationName string, currentEntity interface{}) (T, error) {
+	var result T
+	tx := r.db.Joins(associationName).First(&result, currentEntity)
+
+	return result, tx.Error
+}
+
 func(r *repository[T]) GetAll() ([]T, error) {
 	var result []T
 	tx := r.db.Find(&result)
@@ -57,6 +67,13 @@ func(r *repository[T]) GetAll() ([]T, error) {
 	}
 
 	return result, nil
+}
+
+func(r *repository[T]) GetAllByAssociation(associationName string) ([]T, error) {
+	var result []T
+	tx := r.db.Joins(associationName).Find(&result)
+
+	return result, tx.Error
 }
 
 func(r *repository[T]) GetAllByTenant() ([]T, error) {
@@ -83,6 +100,13 @@ func(r *repository[T]) Find(currentEntity interface{}) ([]T, error) {
 	}
 
 	return result, nil
+}
+
+func(r *repository[T]) FindByAssociation(associationName string, currentEntity interface{}) ([]T, error) {
+	var result []T
+	tx := r.db.Joins(associationName).Find(&result, currentEntity)
+
+	return result, tx.Error
 }
 
 func(r *repository[T]) Update(newEntity T) (T, error) {
