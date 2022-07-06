@@ -104,10 +104,13 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 		return "", err
 	}
 
+	fmt.Print(existingUser.Role.Scopes.Value())
+
 	hashErr := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(currentUser.Password))
 
 	if hashErr == nil {
-		jwt, _ := s.generateJWTToken(ctx, existingUser.Email, existingUser.TenantIdentifier, existingUser.Identifier)
+		jwt, _ := s.generateJWTToken(ctx, existingUser.Email, existingUser.TenantIdentifier, existingUser.Identifier, 
+		existingUser.Role.Scopes)
 
 		return jwt, nil
 	}
@@ -118,7 +121,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
-	userIdentifier string) (string, error) {
+	userIdentifier string, userScopes pq.StringArray) (string, error) {
 	if userEmail == "" {
 		return "", errors.New(constants.INVALID_MODEL)
 	}
@@ -127,6 +130,7 @@ func (s *userService) generateJWTToken(_ context.Context, userEmail string, tena
 		userEmail,
 		tenantIdentifier,
 		userIdentifier,
+		userScopes,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			Issuer: "zappr",

@@ -25,6 +25,7 @@ func InitState() {
 		UserContext: commonmodels.UserContext{
 			UserTenant: "",
 			UserIdentifier: "",
+			UserScopes: []string{},
 		},
 	}
 }

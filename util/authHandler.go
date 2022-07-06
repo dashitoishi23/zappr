@@ -74,7 +74,8 @@ func tokenValidator(jwtToken string) bool {
 		state.GetState().SetUserContext(commonmodels.UserContext{
 			UserTenant: claims.UserTenant,
 			UserIdentifier: claims.UserIdentifier,
-		})
+			UserScopes: claims.UserScopes,
+		})	
 
 		return parsedToken.Valid
 	}
