@@ -16,6 +16,26 @@ func (g *GlobalState) SetUserContext(userContext commonmodels.UserContext) {
 	stateAddress.UserContext = userContext
 }
 
+func (g *GlobalState) IsAllowedToWrite() bool {
+	for _, scope := range g.UserContext.UserScopes {
+		if scope == "write" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (g *GlobalState) IsAllowedToDelete() bool {
+		for _, scope := range g.UserContext.UserScopes {
+		if scope == "delete" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func GetState() *GlobalState {
 	return stateAddress
 }
