@@ -36,6 +36,17 @@ func (g *GlobalState) IsAllowedToDelete() bool {
 	return false
 }
 
+func (g *GlobalState) IsAllowedToUpdate() bool {
+		for _, scope := range g.UserContext.UserScopes {
+		if scope == "update" {
+			return true
+		}
+	}
+
+	return false
+}
+
+
 func GetState() *GlobalState {
 	return stateAddress
 }

@@ -1,6 +1,9 @@
 package userendpoint
 
-import models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+import (
+	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
+	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
+)
 
 type GenerateTokenRequest struct {
 	UserEmail string `json:"useremail"`
@@ -35,3 +38,14 @@ type SignupUserResponse struct {
 }
 
 func (s SignupUserResponse) Failed() error { return s.Err }
+
+type UpdateUserRoleRequest struct {
+	NewUserRole userrolemodels.UserRole `json:"newUserRole"`
+}
+
+type UpdateUserRoleResponse struct {
+	NewUserRole userrolemodels.UserRole `json:"newUserRole"`
+	Err 	error 		`json:"-"`
+}
+
+func (u UpdateUserRoleResponse) Failed() error { return u.Err }

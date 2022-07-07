@@ -13,6 +13,7 @@ import (
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/golang-jwt/jwt"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -22,18 +23,24 @@ import (
 type UserService interface {
 	SignupUser(ctx context.Context, newUser models.User) (models.User, error)
 	LoginUser(ctx context.Context, currentUser models.UserLogin) (string, error)
+	UpdateUserRole(ctx context.Context, newUserRole userrolemodels.UserRole) (userrolemodels.UserRole, error)
+	FindUserById(identifier string) (models.User, error)
 }
 
 type userService struct {
 	repository repository.IRepository[models.User]
 	roleRepository repository.IRepository[masterrolemodels.Role]
+	userRoleRepository repository.IRepository[userrolemodels.UserRole]
 } //class-like skeleton in Go
 
 func NewUserService(repository repository.IRepository[models.User], 
-	roleRepository repository.IRepository[masterrolemodels.Role]) UserService { //makes userService struct implement UserService interface
+	roleRepository repository.IRepository[masterrolemodels.Role], 
+	userRoleRepository repository.IRepository[userrolemodels.UserRole]) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		repository: repository,
 		roleRepository: roleRepository,
+		userRoleRepository: userRoleRepository,
+
 	} //returns an address which points to userService to make changes in original memory address
 }
 
@@ -120,6 +127,16 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 
 }
 
+func (s *userService) UpdateUserRole(ctx context.Context, newUserRole userrolemodels.UserRole) (userrolemodels.UserRole, error) {
+	if errs:= validator.Validate(newUserRole); errs != nil {
+		return newUserRole, errors.New(constants.INVALID_MODEL)
+	}
+
+	res, err := s.userRoleRepository.Update(newUserRole)
+
+	return res, err	
+}
+
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
 	userIdentifier string, userScopes pq.StringArray) (string, error) {
 	if userEmail == "" {
@@ -144,4 +161,13 @@ func (s *userService) generateJWTToken(_ context.Context, userEmail string, tena
 	ss, err := token.SignedString(signingKey)
 
 	return ss, err
+}
+
+func (s *userService) FindUserById(identifier string) (models.User, error) {
+	res, err := s.repository.FindFirst(&models.SearchableUser{
+		Identifier: identifier,
+		TenantIdentifier: state.GetState().UserContext.UserTenant,
+	})
+
+	return res, err
 }

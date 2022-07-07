@@ -22,6 +22,7 @@ import (
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
+	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -61,7 +62,7 @@ func main() {
 		fmt.Print(db.Statement.Vars...)
 		var (
 			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
-		repository.Repository[masterrolemodels.Role](db))
+		repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db))
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
 	)
