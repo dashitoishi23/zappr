@@ -68,15 +68,11 @@ func UpdateUserRoleEndpoint(s userservice.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req:= request.(UpdateUserRoleRequest)
 
-		existingUser, err := s.FindUserById(req.NewUserRole.UserIdentifier)
-
 		if err != nil {
 			return nil, err
 		}
 
-		req.NewUserRole.UpdateFields(existingUser.CreatedOn)
-
-		updatedUser, updateErr := s.UpdateUserRole(ctx, req.NewUserRole)
+		updatedUser, updateErr := s.UpdateUserRole(ctx, req.MasterRoleIdentifier, req.UserIdentifier)
 
 		return UpdateUserRoleResponse{updatedUser, updateErr}, updateErr
 	}

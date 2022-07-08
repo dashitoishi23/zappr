@@ -21,6 +21,7 @@ type IRepository[T any] interface {
 	GetPaged(T interface{}, page int, size int) (commonmodels.PagedResponse[T], error)
 	Update(T T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
+	ExecuteRawQuery(sql string, values ...interface{}) (bool, error)
 }
 
 type repository[T any] struct {
@@ -164,6 +165,16 @@ func(r *repository[T]) GetPaged(currentEntity interface{}, page int, size int) (
 		Pages: int(math.Ceil(float64(len(result))/float64(size))),
 	}, nil	
 
+}
+
+func (r *repository[T]) ExecuteRawQuery(sql string, values ...interface{}) (bool, error) {
+	tx := r.db.Exec(sql, values)
+	
+	if tx.Error != nil {
+		return false, tx.Error
+	}
+
+	return true, nil
 }
 
 

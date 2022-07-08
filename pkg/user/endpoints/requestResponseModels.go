@@ -40,11 +40,12 @@ type SignupUserResponse struct {
 func (s SignupUserResponse) Failed() error { return s.Err }
 
 type UpdateUserRoleRequest struct {
-	NewUserRole userrolemodels.UserRole `json:"newUserRole"`
+	MasterRoleIdentifier string `json:"masterRoleIdentifier"`
+	UserIdentifier string `json:"userIdentifier"`
 }
 
 type UpdateUserRoleResponse struct {
-	NewUserRole userrolemodels.UserRole `json:"newUserRole"`
+	UpdatedUserRole userrolemodels.UserRole `json:"updatedUserRole"`
 	Err 	error 		`json:"-"`
 }
 

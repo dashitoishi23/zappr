@@ -23,7 +23,8 @@ import (
 type UserService interface {
 	SignupUser(ctx context.Context, newUser models.User) (models.User, error)
 	LoginUser(ctx context.Context, currentUser models.UserLogin) (string, error)
-	UpdateUserRole(ctx context.Context, newUserRole userrolemodels.UserRole) (userrolemodels.UserRole, error)
+	UpdateUserRole(ctx context.Context, roleIdentifier string, 
+		userIdentifier string) (userrolemodels.UserRole, error)
 	FindUserById(identifier string) (models.User, error)
 }
 
@@ -127,14 +128,33 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 
 }
 
-func (s *userService) UpdateUserRole(ctx context.Context, newUserRole userrolemodels.UserRole) (userrolemodels.UserRole, error) {
-	if errs:= validator.Validate(newUserRole); errs != nil {
-		return newUserRole, errors.New(constants.INVALID_MODEL)
+func (s *userService) UpdateUserRole(ctx context.Context, roleIdentifier string, 
+	userIdentifier string) (userrolemodels.UserRole, error) {
+	
+	existingUser, err := s.FindUserById(userIdentifier)
+
+	existingRole, roleErr := s.roleRepository.FindFirst(&masterrolemodels.SearchableRole{
+		Identifier: roleIdentifier,
+	})
+
+	if err != nil {
+		return existingUser.Role, err
 	}
 
-	res, err := s.userRoleRepository.Update(newUserRole)
+	if roleErr != nil {
+		return existingUser.Role, roleErr
+	}
 
-	return res, err	
+	updatedUserRole, roleErr := s.userRoleRepository.Update(userrolemodels.UserRole{
+		Identifier: existingUser.Role.Identifier,
+		RoleIdentifier: roleIdentifier,
+		UserIdentifier: userIdentifier,
+		Scopes: existingRole.Scopes,
+		CreatedOn: existingUser.Role.CreatedOn,
+		ModifiedOn: time.Now(),
+	})
+
+	return updatedUserRole, roleErr	
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
@@ -164,7 +184,7 @@ func (s *userService) generateJWTToken(_ context.Context, userEmail string, tena
 }
 
 func (s *userService) FindUserById(identifier string) (models.User, error) {
-	res, err := s.repository.FindFirst(&models.SearchableUser{
+	res, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
 		Identifier: identifier,
 		TenantIdentifier: state.GetState().UserContext.UserTenant,
 	})

@@ -10,7 +10,6 @@ import (
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -38,7 +37,7 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 
 	updateUserRoleHandler := httptransport.NewServer(
 		endpoints.UpdateUserRole,
-		DecodeUpdateUserRoleRequest,
+		util.DecodeHTTPGenericRequest[userendpoint.UpdateUserRoleRequest],
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
@@ -56,7 +55,7 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: updateUserRoleHandler,
-		Route:"/user/role/{userIdentifier}",
+		Route:"/user/role",
 		Methods: []string{"PUT"},
 	})
 
@@ -83,26 +82,4 @@ func DecodeLoginRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	req.CurrentUser.TenantIdentifier = parts[len(parts) - 1]
 
 	return req, err
-}
-
-func DecodeUpdateUserRoleRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	if !state.GetState().IsAllowedToUpdate() {
-		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-	}
-	
-	var req userendpoint.UpdateUserRoleRequest
-
-	path := r.URL.Path
-
-	parts := strings.Split(path, "/")
-
-	if len(parts) <= 1 {
-		return nil, errors.New(constants.RECORD_NOT_FOUND)
-	} else if parts[len(parts) - 1] == "" {
-		return nil, errors.New(constants.RECORD_NOT_FOUND)
-	}
-
-	req.NewUserRole.UserIdentifier = parts[len(parts) - 1]
-
-	return req, nil
 }
