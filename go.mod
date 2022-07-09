@@ -18,8 +18,8 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
-	gorm.io/driver/postgres v1.3.7 // indirect
-	gorm.io/gorm v1.23.6 // indirect
+	gorm.io/driver/postgres v1.3.8 // indirect
+	gorm.io/gorm v1.23.8 // indirect
 )
 
 require (
@@ -28,7 +28,7 @@ require (
 )
 
 require (
-	github.com/go-kit/log v0.2.0 //indirect
+	github.com/go-kit/log v0.2.1 //indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
