@@ -22,6 +22,9 @@ import (
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	usertransport "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/transports"
+	usermetadataendpoints "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/endpoints"
+	usermetadatamodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/models"
+	usermetadatatransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/transports"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
@@ -84,6 +87,14 @@ func main() {
 		)
 
 		servers = append(servers, roleServers...)
+
+		var (
+			userMetadataService = repository.NewBaseCRUD(repository.Repository[usermetadatamodels.UserMetadata](db))
+			userMetadataEndpoint = usermetadataendpoints.New(userMetadataService, logger)
+			userMetadataServers = usermetadatatransports.NewHandler(userMetadataEndpoint, logger)
+		)
+
+		servers = append(servers, userMetadataServers...)
 
 		httpHandler := util.RootHttpHandler(servers)
 
