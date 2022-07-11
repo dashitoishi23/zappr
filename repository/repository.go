@@ -22,6 +22,7 @@ type IRepository[T any] interface {
 	Update(T T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
 	ExecuteRawQuery(sql string, values ...interface{}) (bool, error)
+	QueryRawSql(sql string) ([]T, error)
 }
 
 type repository[T any] struct {
@@ -175,6 +176,13 @@ func (r *repository[T]) ExecuteRawQuery(sql string, values ...interface{}) (bool
 	}
 
 	return true, nil
+}
+
+func (r *repository[T]) QueryRawSql(sql string) ([]T, error) {
+	var res []T
+	tx := r.db.Raw(sql).Scan(&res)
+
+	return res, tx.Error
 }
 
 

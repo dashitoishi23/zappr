@@ -12,3 +12,15 @@ type AddUserMetadataResponse struct {
 }
 
 func (a *AddUserMetadataResponse) Failed() error { return a.Err }
+
+type GetUserMetadataRequest struct {
+	Query map[string]interface{} `json:"query"`
+	EntityName string `json:"entityName"`
+}
+
+type GetUserMetadataResponse struct {
+	UserMetadata []usermetadatamodels.UserMetadata `json:"userMetadata"`
+	Err error `json:"-"`
+}
+
+func (g *GetUserMetadataResponse) Failed() error { return g.Err }

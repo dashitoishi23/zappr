@@ -1,6 +1,7 @@
 package usermetadatamodels
 
 import (
+	"encoding/json"
 	"time"
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
@@ -9,7 +10,7 @@ import (
 
 type UserMetadata struct {
 	Identifier string `json:"identifier"`
-	Metadata map[string]interface{} `json:"metadata" gorm:"type:jsonb"`
+	Metadata json.RawMessage `json:"metadata" gorm:"type:jsonb"`
 	TenantIdentifier string `json:"tenantIdentifier"`
 	EntityName string `json:"entityName"`
 	CreatedOn time.Time `json:"createdOn"`
