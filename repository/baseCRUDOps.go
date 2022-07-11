@@ -19,7 +19,7 @@ type BaseCRUD[T any] interface {
 		txnError chan error)
 	Update(updatedEntity T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
-	QueryRawSql(sql string) ([]T, error)
+	QueryRawSql(sql string, conditions ...interface{}) ([]T, error)
 }
 
 type baseCRUD[T any] struct {
@@ -122,8 +122,8 @@ func (b *baseCRUD[T]) GetPagedAsync(obj interface{}, page int, size int, pagedRe
 	txnError <- err
 }
 
-func (b *baseCRUD[T]) QueryRawSql(sql string) ([]T, error) {
-	result, err := b.repository.QueryRawSql(sql)
+func (b *baseCRUD[T]) QueryRawSql(sql string, conditions ...interface{}) ([]T, error) {
+	result, err := b.repository.QueryRawSql(sql, conditions)
 
 	return result, err
 }

@@ -7,6 +7,7 @@ import (
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
@@ -60,7 +61,7 @@ func GetUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 			return nil, jsonErr
 		}
 
-		query := "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' "
+		query := "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + state.GetState().UserContext.UserTenant + "' and \"EntityName\" = '"  + req.EntityName + "' "
 
 		res, err := s.QueryRawSql(query)
 
