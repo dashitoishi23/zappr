@@ -37,6 +37,13 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		serverOptions...
 	)
 
+	getMetadataByEntityHandler := httptransport.NewServer(
+		endpoints.GetMetadataByEntity,
+		util.DecodeGenericHTTPIdentifierRequest,
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(usermetadataServers, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: addHandler,
@@ -46,6 +53,11 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		NeedsAuth: true,
 		Server: getHandler,
 		Route: "/usermetadata/{entityName}",
+		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: getMetadataByEntityHandler,
+		Route: "/usermetadata/all/{entityName}",
 		Methods: []string{"GET"},
 	})
 }

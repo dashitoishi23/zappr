@@ -17,6 +17,7 @@ type BaseCRUD[T any] interface {
 	Find(obj interface{}) ([]T, error)
 	GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
 		txnError chan error)
+	GetPaged(obj interface{}, page int, size int) (commonmodels.PagedResponse[T], error)
 	Update(updatedEntity T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
 	QueryRawSql(sql string, conditions ...interface{}) ([]T, error)
@@ -120,6 +121,13 @@ func (b *baseCRUD[T]) GetPagedAsync(obj interface{}, page int, size int, pagedRe
 
 	pagedResponse <- result
 	txnError <- err
+}
+
+func (b *baseCRUD[T]) GetPaged(obj interface{}, page int, size int) (commonmodels.PagedResponse[T], error) {
+	
+	result, err := b.repository.GetPaged(obj, page, size)
+
+	return result, err
 }
 
 func (b *baseCRUD[T]) QueryRawSql(sql string, conditions ...interface{}) ([]T, error) {

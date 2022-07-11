@@ -1,6 +1,10 @@
 package usermetadataendpoints
 
-import usermetadatamodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/models"
+import (
+	"encoding/json"
+
+	usermetadatamodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/models"
+)
 
 type AddUserMetadataRequest struct {
 	NewUserMetadata usermetadatamodels.UserMetadata `json:"newUserMetadata"`
@@ -24,3 +28,14 @@ type GetUserMetadataResponse struct {
 }
 
 func (g *GetUserMetadataResponse) Failed() error { return g.Err }
+
+type GetMetadataByEntityRequest struct {
+
+}
+
+type GetMetadataByEntityResponse struct {
+	UserMetadata []json.RawMessage `json:"metadata"`
+	Err error `json:"-"`
+}
+
+func (g *GetMetadataByEntityResponse) Failed() error { return g.Err }

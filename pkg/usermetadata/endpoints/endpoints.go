@@ -18,6 +18,7 @@ import (
 type Set struct {
 	AddUserMetadata endpoint.Endpoint
 	GetUserMetadata endpoint.Endpoint
+	GetMetadataByEntity endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Logger) Set {
@@ -33,9 +34,16 @@ func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Lo
 		getUserMetadataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUserMetadata"))(getUserMetadataEndpoint)
 	}
 
+	var getMetadataByEndpoint endpoint.Endpoint
+	{
+		getMetadataByEndpoint = GetMetadataByEntity(svc)
+		getMetadataByEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getMetadataByEndpoint"))(getMetadataByEndpoint)
+	}
+
 	return Set{
 		AddUserMetadata: addUserMetadataEndpoint,
 		GetUserMetadata: getUserMetadataEndpoint,
+		GetMetadataByEntity: getMetadataByEndpoint,
 	}
 }
 
@@ -47,7 +55,7 @@ func AddUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 
 		res, err := s.Create(req.NewUserMetadata)
 
-		return res, err
+		return AddUserMetadataResponse{res, err}, err
 	}
 }
 
@@ -69,6 +77,31 @@ func GetUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 			return res, errors.New(constants.RECORD_NOT_FOUND)
 		}
 
-		return res, err
+		return GetUserMetadataResponse{res, err}, err
+	}
+}
+
+func GetMetadataByEntity(s repository.BaseCRUD[usermetadatamodels.UserMetadata]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		entityName := request.(string)
+
+		res, err := s.Find(usermetadatamodels.SearchableUserMetadata{
+			TenantIdentifier: state.GetState().UserContext.UserTenant,
+			EntityName: entityName,
+		})
+		var metadata []json.RawMessage
+
+		
+		if err != nil {
+			return GetMetadataByEntityResponse{metadata, err}, err
+		}
+
+
+		for _, data := range res {
+			metadata = append(metadata, data.Metadata)
+		}
+
+		return GetMetadataByEntityResponse{metadata, nil}, nil
+
 	}
 }

@@ -191,25 +191,9 @@ func GetPagedTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoin
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(commonmodels.PagedRequest[FindTenantsRequest])
 
-		respChan := make(chan commonmodels.PagedResponse[tenantmodels.Tenant])
-		txnError := make(chan error)
-		go s.GetPagedAsync(req.Entity.CurrentTenant, req.Page, req.Size, respChan, txnError)
+		res, err := s.GetPaged(req.Entity.CurrentTenant, req.Page, req.Size)
 
-		for{
-			select {			
-			case entity := <-respChan:
-				err := <-txnError			
-				close(respChan)
-				close(txnError)
-				return commonmodels.PagedResponse[tenantmodels.Tenant]{
-					Items: entity.Items,
-					Page: entity.Page,
-					Size: entity.Size,
-					Pages: entity.Pages,
-					Err: err,
-				}, err
-			}	
-		}
+		return GetPagedTenantResponse{res, err}, err
 	}
 }
 
