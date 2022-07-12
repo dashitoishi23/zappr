@@ -19,6 +19,7 @@ type Set struct {
 	AddUserMetadata endpoint.Endpoint
 	GetUserMetadata endpoint.Endpoint
 	GetMetadataByEntity endpoint.Endpoint
+	GetMetadataByEntityPaged endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Logger) Set {
@@ -40,10 +41,18 @@ func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Lo
 		getMetadataByEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getMetadataByEndpoint"))(getMetadataByEndpoint)
 	}
 
+	var getMetadataByEntityPagedEndpoint endpoint.Endpoint
+	{
+		getMetadataByEntityPagedEndpoint = GetMetadataByEntityPagedEndpoint(svc)
+		getMetadataByEntityPagedEndpoint = util.TransportLoggingMiddleware(log.
+			With(logger, "method", "getMetadataByEntityPagedEndpoint"))(getMetadataByEntityPagedEndpoint)
+	}
+
 	return Set{
 		AddUserMetadata: addUserMetadataEndpoint,
 		GetUserMetadata: getUserMetadataEndpoint,
 		GetMetadataByEntity: getMetadataByEndpoint,
+		GetMetadataByEntityPaged: getMetadataByEntityPagedEndpoint,
 	}
 }
 
@@ -63,13 +72,11 @@ func GetUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(GetUserMetadataRequest)
 
-		jsonQuery, jsonErr := json.Marshal(req.Query)
+		query, queryErr := constructJSONBQuery(req.Query, req.EntityName)
 
-		if jsonErr != nil {
-			return nil, jsonErr
+		if queryErr != nil {
+			return nil, queryErr
 		}
-
-		query := "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + state.GetState().UserContext.UserTenant + "' and \"EntityName\" = '"  + req.EntityName + "' "
 
 		res, err := s.QueryRawSql(query)
 
@@ -89,7 +96,13 @@ func GetMetadataByEntity(s repository.BaseCRUD[usermetadatamodels.UserMetadata])
 			TenantIdentifier: state.GetState().UserContext.UserTenant,
 			EntityName: entityName,
 		})
+
 		var metadata []json.RawMessage
+
+		if len(res) == 0 {
+			return GetMetadataByEntityResponse{metadata, errors.New(constants.RECORD_NOT_FOUND)}, 
+			errors.New(constants.RECORD_NOT_FOUND)
+		}
 
 		
 		if err != nil {
@@ -104,4 +117,31 @@ func GetMetadataByEntity(s repository.BaseCRUD[usermetadatamodels.UserMetadata])
 		return GetMetadataByEntityResponse{metadata, nil}, nil
 
 	}
+}
+
+func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadata]) endpoint.Endpoint{
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(GetMetadataByEntityPagedRequest)
+
+		query, queryErr := constructJSONBQuery(req.Query, req.EntityName)
+
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		res, err := s.QueryRawSqlPaged(query, req.Page, req.Size)
+
+		return res, err
+		
+	}
+}
+
+func constructJSONBQuery(query map[string]interface{}, entityName string) (string, error) {
+	jsonQuery, jsonErr := json.Marshal(query)
+
+		if jsonErr != nil {
+			return "", jsonErr
+		}
+
+		return "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + state.GetState().UserContext.UserTenant + "' and \"EntityName\" = '"  + entityName + "' ", nil
 }

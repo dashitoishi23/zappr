@@ -39,3 +39,17 @@ type GetMetadataByEntityResponse struct {
 }
 
 func (g *GetMetadataByEntityResponse) Failed() error { return g.Err }
+
+type GetMetadataByEntityPagedRequest struct {
+	Query map[string]interface{} `json:"query"`
+	EntityName string `json:"entityName"`
+	Page   int `json:"page"`
+	Size   int `json:"size"`
+}
+
+type GetMetadataByEntityPagedResponse struct {
+	UserMetadata []json.RawMessage `json:"userMetadata"`
+	Err error `json:"-"`
+}
+
+func (g *GetMetadataByEntityPagedResponse) Failed() error { return g.Err }

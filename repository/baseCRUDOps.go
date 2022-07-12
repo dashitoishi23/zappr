@@ -21,6 +21,7 @@ type BaseCRUD[T any] interface {
 	Update(updatedEntity T) (T, error)
 	Delete(currentEntity interface{}) (bool, error)
 	QueryRawSql(sql string, conditions ...interface{}) ([]T, error)
+	QueryRawSqlPaged(sql string, page int, size int, conditions ...interface{}) (commonmodels.PagedResponse[T], error)
 }
 
 type baseCRUD[T any] struct {
@@ -132,6 +133,13 @@ func (b *baseCRUD[T]) GetPaged(obj interface{}, page int, size int) (commonmodel
 
 func (b *baseCRUD[T]) QueryRawSql(sql string, conditions ...interface{}) ([]T, error) {
 	result, err := b.repository.QueryRawSql(sql, conditions)
+
+	return result, err
+}
+
+func (b *baseCRUD[T]) QueryRawSqlPaged(sql string, page int, size int, 
+	conditions ...interface{}) (commonmodels.PagedResponse[T], error) {
+	result, err := b.repository.QueryRawSqlPaged(sql, page, size, conditions...)
 
 	return result, err
 }

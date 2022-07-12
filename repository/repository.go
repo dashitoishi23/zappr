@@ -23,6 +23,7 @@ type IRepository[T any] interface {
 	Delete(currentEntity interface{}) (bool, error)
 	ExecuteRawQuery(sql string, values ...interface{}) (bool, error)
 	QueryRawSql(sql string, conditions ...interface{}) ([]T, error)
+	QueryRawSqlPaged(sql string, page int, size int, conditions ...interface{}) (commonmodels.PagedResponse[T], error)
 }
 
 type repository[T any] struct {
@@ -183,6 +184,46 @@ func (r *repository[T]) QueryRawSql(sql string, conditions ...interface{}) ([]T,
 	tx := r.db.Raw(sql, conditions...).Scan(&res)
 
 	return res, tx.Error
+}
+
+func (r *repository[T]) QueryRawSqlPaged(sql string, page int, size int, 
+	conditions ...interface{}) (commonmodels.PagedResponse[T], error) {
+
+	var result []T
+	tx := r.db.Raw(sql, conditions...).Scan(&result)
+
+	skip := (page - 1) * size
+
+	resultOfDBOp := len(result)
+
+	if skip > resultOfDBOp {
+		skip = resultOfDBOp
+	}
+
+	end := skip + size
+
+	if end > resultOfDBOp {
+		end = resultOfDBOp
+	}
+
+
+	if tx.Error != nil {
+		return commonmodels.PagedResponse[T]{
+			Items: result,
+			Page: page,
+			Size: size,
+			Pages: 0,
+		}, tx.Error
+	}
+
+	return commonmodels.PagedResponse[T]{
+		Items: result[skip:end],
+		Page: page,
+		Size: size,
+		Pages: int(math.Ceil(float64(len(result))/float64(size))),
+	}, nil	
+
+
 }
 
 
