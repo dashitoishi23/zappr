@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -146,6 +147,11 @@ func DecodeGetMetadataByEntityPagedRequest(ctx context.Context, r *http.Request)
 	decodedReq.DisallowUnknownFields()
 
 	err := decodedReq.Decode(&req.Query)
+
+	if err == io.EOF {
+		req.Query = map[string]interface{}{}
+		return req, nil
+	}
 
 	if err != nil {
 		return req, err
