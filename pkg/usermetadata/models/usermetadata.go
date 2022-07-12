@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"github.com/google/uuid"
 )
 
@@ -17,17 +17,17 @@ type UserMetadata struct {
 	ModifiedOn time.Time `json:"modifiedOn"`
 }
 
-func (u *UserMetadata) InitFields(){
+func (u *UserMetadata) InitFields(scope commonmodels.RequestScope){
 	u.Identifier = uuid.New().String()
 
 	u.CreatedOn = time.Now()
 	u.ModifiedOn = time.Time{}
-	u.TenantIdentifier = state.GetState().UserContext.UserTenant
+	u.TenantIdentifier = scope.UserTenant
 }
 
-func (u *UserMetadata) UpdateFields(createdOn time.Time) {
+func (u *UserMetadata) UpdateFields(createdOn time.Time, scope commonmodels.RequestScope) {
 	u.CreatedOn = createdOn
 	u.ModifiedOn = time.Now()
 
-	u.TenantIdentifier = state.GetState().UserContext.UserTenant
+	u.TenantIdentifier = scope.UserTenant
 }

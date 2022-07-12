@@ -13,7 +13,6 @@ import (
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/golang-jwt/jwt"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -25,7 +24,7 @@ type UserService interface {
 	LoginUser(ctx context.Context, currentUser models.UserLogin) (string, error)
 	UpdateUserRole(ctx context.Context, roleIdentifier string, 
 		userIdentifier string) (userrolemodels.UserRole, error)
-	FindUserById(identifier string) (models.User, error)
+	FindUserById(ctx context.Context, identifier string) (models.User, error)
 }
 
 type userService struct {
@@ -131,7 +130,7 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 func (s *userService) UpdateUserRole(ctx context.Context, roleIdentifier string, 
 	userIdentifier string) (userrolemodels.UserRole, error) {
 	
-	existingUser, err := s.FindUserById(userIdentifier)
+	existingUser, err := s.FindUserById(ctx, userIdentifier)
 
 	existingRole, roleErr := s.roleRepository.FindFirst(&masterrolemodels.SearchableRole{
 		Identifier: roleIdentifier,
@@ -183,10 +182,10 @@ func (s *userService) generateJWTToken(_ context.Context, userEmail string, tena
 	return ss, err
 }
 
-func (s *userService) FindUserById(identifier string) (models.User, error) {
+func (s *userService) FindUserById(ctx context.Context, identifier string) (models.User, error) {
 	res, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
 		Identifier: identifier,
-		TenantIdentifier: state.GetState().UserContext.UserTenant,
+		TenantIdentifier: ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant,
 	})
 
 	return res, err

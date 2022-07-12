@@ -1,6 +1,8 @@
 package masterrolemodels
 
-import "dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
+import (
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
+)
 
 type SearchableRole struct {
 	Identifier       string `json:"identifier"`
@@ -10,6 +12,6 @@ type SearchableRole struct {
 	TenantIdentifier string `json:"tenantIdentifier"`
 }
 
-func (s *SearchableRole) AddTenant() {
-	s.TenantIdentifier = state.GetState().GetUserContext().UserTenant
+func (s *SearchableRole) AddTenant(requestScope commonmodels.RequestScope) {
+	s.TenantIdentifier = requestScope.UserTenant
 }

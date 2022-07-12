@@ -3,7 +3,7 @@ package masterrolemodels
 import (
 	"time"
 
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -17,16 +17,16 @@ type Role struct {
 	Scopes 			pq.StringArray `json:"scopes" validate:"nonzero" gorm:"type:text[]"`
 }
 
-func (r *Role) InitFields() {
+func (r *Role) InitFields(requestScope commonmodels.RequestScope) {
 	r.Identifier = uuid.New().String()
 
 	r.CreatedOn = time.Now()
 	r.ModifiedOn = time.Time{}
-	r.TenantIdentifier = state.GetState().GetUserContext().UserTenant
+	r.TenantIdentifier = requestScope.UserTenant
 }
 
-func (r *Role) UpdateFields(createdOn time.Time){
+func (r *Role) UpdateFields(createdOn time.Time, requestScope commonmodels.RequestScope){
 	r.CreatedOn = createdOn
 	r.ModifiedOn = time.Now()
-	r.TenantIdentifier = state.GetState().UserContext.UserTenant
+	r.TenantIdentifier = requestScope.UserTenant
 }

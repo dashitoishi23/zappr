@@ -71,7 +71,7 @@ func CreateRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.E
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(CreateRoleRequest)
 
-		req.NewRole.InitFields()
+		req.NewRole.InitFields(ctx.Value("requestScope").(commonmodels.RequestScope))
 
 		resp, err := s.Create(req.NewRole)
 
@@ -90,7 +90,7 @@ func FindFirstRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoin
 
 		req := request.(FindFirstRoleRequest)
 
-		req.CurrentRole.AddTenant()
+		req.CurrentRole.AddTenant(ctx.Value("requestScope").(commonmodels.RequestScope))
 
 		resp, err = s.GetFirst(req.CurrentRole)
 
@@ -106,7 +106,7 @@ func GetAllRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var resp []masterrolemodels.Role
 
-		resp, err = s.GetAllByTenant()
+		resp, err = s.GetAllByTenant(ctx)
 
 		if err != nil {
 			return GetAllRolesResponse{resp, err}, err
@@ -123,7 +123,7 @@ func FindRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.En
 
 		req := request.(FindRolesRequest)
 
-		req.CurrentRole.AddTenant()
+		req.CurrentRole.AddTenant(ctx.Value("requestScope").(commonmodels.RequestScope))
 
 		resp, err = s.Find(req.CurrentRole)
 
@@ -151,7 +151,7 @@ func UpdateRoleEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoint.E
 			select {			
 			case entity := <-currentEntity:
 				err := <-txnError
-				req.NewRole.UpdateFields(entity.CreatedOn)
+				req.NewRole.UpdateFields(entity.CreatedOn, ctx.Value("requestScope").(commonmodels.RequestScope))
 				resp, _ := s.Update(req.NewRole)				
 				close(currentEntity)
 				close(txnError)
@@ -168,7 +168,7 @@ func GetPagedRolesEndpoint(s repository.BaseCRUD[masterrolemodels.Role]) endpoin
 		respChan := make(chan commonmodels.PagedResponse[masterrolemodels.Role])
 		txnError := make(chan error)
 
-		req.Entity.CurrentRole.AddTenant()
+		req.Entity.CurrentRole.AddTenant(ctx.Value("requestScope").(commonmodels.RequestScope))
 		go s.GetPagedAsync(req.Entity.CurrentRole, req.Page, req.Size, respChan, txnError)
 
 		for{

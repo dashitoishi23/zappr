@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"math"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +13,7 @@ type IRepository[T any] interface {
 	Add(T T) *gorm.DB
 	GetAll() ([]T, error)
 	GetAllByAssociation(associationName string) ([]T, error)
-	GetAllByTenant() ([]T, error)
+	GetAllByTenant(ctx context.Context) ([]T, error)
 	FindFirst(T interface{}) (T, error)
 	FindFirstByAssociation(associationName string, T interface{}) (T, error)
 	Find(T interface{}) ([]T, error)
@@ -79,10 +79,10 @@ func(r *repository[T]) GetAllByAssociation(associationName string) ([]T, error) 
 	return result, tx.Error
 }
 
-func(r *repository[T]) GetAllByTenant() ([]T, error) {
+func(r *repository[T]) GetAllByTenant(ctx context.Context) ([]T, error) {
 	var result []T
 	tx := r.db.Where(map[string]interface{}{
-		"TenantIdentifier": state.GetState().UserContext.UserTenant,
+		"TenantIdentifier": ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant,
 	}).Find(&result)
 
 	if tx.Error != nil {

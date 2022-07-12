@@ -11,7 +11,6 @@ import (
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -88,20 +87,25 @@ func DecodeHTTPPagedRequest[T any](ctx context.Context, r *http.Request) (interf
 
 func DecodeHTTPGenericRequest[T any](ctx context.Context,  r *http.Request) (interface{}, error){
 
-	switch r.Method {
-	case "PUT":
-		if !state.GetState().IsAllowedToWrite() {
-			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-		}
-	case "POST":
-		if !state.GetState().IsAllowedToWrite() {
-			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-		}
-	case "DELETE":
-		if !state.GetState().IsAllowedToDelete() {
-			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+	requestScope, ok := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	if ok {
+		switch r.Method {
+		case "PUT":
+			if !requestScope.IsAllowedToWrite() {
+				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+			}
+		case "POST":
+			if !requestScope.IsAllowedToWrite() {
+				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+			}
+		case "DELETE":
+			if !requestScope.IsAllowedToDelete() {
+				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+			}
 		}
 	}
+
 
 	var req T
 

@@ -6,8 +6,8 @@ import (
 	"errors"
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
@@ -60,7 +60,7 @@ func AddUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(AddUserMetadataRequest)
 
-		req.NewUserMetadata.InitFields()
+		req.NewUserMetadata.InitFields(ctx.Value("requestScope").(commonmodels.RequestScope))
 
 		res, err := s.Create(req.NewUserMetadata)
 
@@ -72,7 +72,9 @@ func GetUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(GetUserMetadataRequest)
 
-		query, queryErr := constructJSONBQuery(req.Query, req.EntityName)
+		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+
+		query, queryErr := constructJSONBQuery(req.Query, req.EntityName, tenantId)
 
 		if queryErr != nil {
 			return nil, queryErr
@@ -93,7 +95,7 @@ func GetMetadataByEntity(s repository.BaseCRUD[usermetadatamodels.UserMetadata])
 		entityName := request.(string)
 
 		res, err := s.Find(usermetadatamodels.SearchableUserMetadata{
-			TenantIdentifier: state.GetState().UserContext.UserTenant,
+			TenantIdentifier: ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant,
 			EntityName: entityName,
 		})
 
@@ -123,7 +125,9 @@ func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.U
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(GetMetadataByEntityPagedRequest)
 
-		query, queryErr := constructJSONBQuery(req.Query, req.EntityName)
+		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+
+		query, queryErr := constructJSONBQuery(req.Query, req.EntityName, tenantId)
 
 		if queryErr != nil {
 			return nil, queryErr
@@ -136,12 +140,12 @@ func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.U
 	}
 }
 
-func constructJSONBQuery(query map[string]interface{}, entityName string) (string, error) {
+func constructJSONBQuery(query map[string]interface{}, entityName string, tenantIdentifier string) (string, error) {
 	jsonQuery, jsonErr := json.Marshal(query)
 
 		if jsonErr != nil {
 			return "", jsonErr
 		}
 
-		return "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + state.GetState().UserContext.UserTenant + "' and \"EntityName\" = '"  + entityName + "' ", nil
+		return "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + tenantIdentifier + "' and \"EntityName\" = '"  + entityName + "' ", nil
 }

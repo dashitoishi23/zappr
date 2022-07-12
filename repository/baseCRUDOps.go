@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
@@ -13,7 +14,7 @@ type BaseCRUD[T any] interface {
 	GetFirst(obj interface{}) (T, error)
 	GetFirstAsync(obj interface{}, entity chan T, txnError chan error)
 	GetAll() ([]T, error)
-	GetAllByTenant() ([]T, error)
+	GetAllByTenant(ctx context.Context) ([]T, error)
 	Find(obj interface{}) ([]T, error)
 	GetPagedAsync(obj interface{}, page int, size int, pagedResponse chan commonmodels.PagedResponse[T], 
 		txnError chan error)
@@ -75,8 +76,8 @@ func (b *baseCRUD[T]) GetAll() ([]T, error) {
 	return result, nil
 }
 
-func (b *baseCRUD[T]) GetAllByTenant() ([]T, error) {
-	result, err := b.repository.GetAllByTenant()
+func (b *baseCRUD[T]) GetAllByTenant(ctx context.Context) ([]T, error) {
+	result, err := b.repository.GetAllByTenant(ctx)
 
 	if err != nil {
 		return result, err

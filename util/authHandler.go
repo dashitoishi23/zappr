@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
-	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/state"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -30,7 +30,9 @@ var AuthHandler = func (w http.ResponseWriter, r *http.Request, next http.Handle
 
 	}
 
-	if !tokenValidator(authtoken) {
+	resp, ctx := tokenValidator(authtoken)
+
+	if !resp {
 		response["isValid"] = false
 
 		w.WriteHeader(http.StatusUnauthorized)
@@ -40,13 +42,15 @@ var AuthHandler = func (w http.ResponseWriter, r *http.Request, next http.Handle
 		return
 	}
 
-	next(w, r)
+	next(w, r.WithContext(ctx))
 
 }
 
-func tokenValidator(jwtToken string) bool {
+func tokenValidator(jwtToken string) (bool, context.Context) {
+	ctx := context.Background()
+
 	if jwtToken == "" {
-		return false
+		return false, ctx
 	}
 
 	jwtToken = strings.Split(jwtToken, " ")[1]
@@ -67,18 +71,18 @@ func tokenValidator(jwtToken string) bool {
 	})
 
 	if err != nil {
-		return false
+		return false, ctx
 	}
 
 	if claims, ok := parsedToken.Claims.(*commonmodels.JWTClaims); ok && parsedToken.Valid {
-		state.GetState().SetUserContext(commonmodels.UserContext{
+		ctx = context.WithValue(ctx, "requestScope", commonmodels.RequestScope{
 			UserTenant: claims.UserTenant,
 			UserIdentifier: claims.UserIdentifier,
 			UserScopes: claims.UserScopes,
-		})	
+		})
 
-		return parsedToken.Valid
+		return parsedToken.Valid, ctx
 	}
 
-	return false
+	return false, ctx
 }
