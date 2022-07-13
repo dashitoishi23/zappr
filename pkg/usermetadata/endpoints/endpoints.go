@@ -76,7 +76,13 @@ func AddUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(AddUserMetadataRequest)
 
-		req.NewUserMetadata.InitFields(ctx.Value("requestScope").(commonmodels.RequestScope))
+		requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+		if !requestScope.IsAllowedToWrite() {
+			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+		}
+
+		req.NewUserMetadata.InitFields(requestScope)
 
 		res, err := s.Create(req.NewUserMetadata)
 
@@ -170,7 +176,13 @@ func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(UpdateMetadataRequest)
 
-		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+		requestScope :=  ctx.Value("requestScope").(commonmodels.RequestScope)
+
+		if !requestScope.IsAllowedToUpdate() {
+			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+		}
+
+		tenantId := requestScope.UserTenant
 
 		updatedQuery, queryErr := json.Marshal(req.UpdatedQuery)
 
@@ -184,7 +196,7 @@ func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 			return nil, queryErr
 		}
 
-		query := "update \"UserMetadata\" set \"Metadata\" = '" + string(updatedQuery) + "' where \"Metadata\" @> '" +  sql
+		query := "update \"UserMetadata\" set \"Metadata\" = '" + string(updatedQuery) + "',\"ModifiedOn\" = NOW() where \"Metadata\" @> '" +  sql
 		
 		resp, err := s.ExecuteRawQuery(query)
 
@@ -200,7 +212,13 @@ func DeleteMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(GetUserMetadataRequest)
 
-		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+		requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+		if !requestScope.IsAllowedToDelete() {
+			return nil, errors.New(constants.INVALID_MODEL)
+		}
+
+		tenantId := requestScope.UserTenant
 
 		query, queryErr := constructJSONBQuery(req.Query, req.EntityName, tenantId)
 
