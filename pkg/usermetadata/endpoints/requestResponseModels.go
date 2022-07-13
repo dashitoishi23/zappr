@@ -3,6 +3,7 @@ package usermetadataendpoints
 import (
 	"encoding/json"
 
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	usermetadatamodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/models"
 )
 
@@ -48,7 +49,7 @@ type GetMetadataByEntityPagedRequest struct {
 }
 
 type GetMetadataByEntityPagedResponse struct {
-	UserMetadata []json.RawMessage `json:"userMetadata"`
+	commonmodels.PagedResponse[json.RawMessage] `json:"userMetadata"`
 	Err error `json:"-"`
 }
 

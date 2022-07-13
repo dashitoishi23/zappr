@@ -135,7 +135,17 @@ func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.U
 
 		res, err := s.QueryRawSqlPaged(query, req.Page, req.Size)
 
-		return res, err
+		var pagedResponse commonmodels.PagedResponse[json.RawMessage]
+
+		for _, item := range res.Items {
+			pagedResponse.Items = append(pagedResponse.Items, item.Metadata)
+		}
+
+		pagedResponse.Page = res.Page
+		pagedResponse.Size = res.Size
+		pagedResponse.Pages = res.Pages
+
+		return GetMetadataByEntityPagedResponse{pagedResponse, err}, err
 		
 	}
 }
