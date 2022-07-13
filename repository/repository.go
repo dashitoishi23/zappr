@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"gorm.io/gorm"
 )
@@ -174,6 +176,10 @@ func (r *repository[T]) ExecuteRawQuery(sql string, values ...interface{}) (bool
 	
 	if tx.Error != nil {
 		return false, tx.Error
+	}
+
+	if tx.RowsAffected == 0 {
+		return false, errors.New(constants.RECORD_NOT_FOUND)
 	}
 
 	return true, nil

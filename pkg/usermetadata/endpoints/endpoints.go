@@ -20,6 +20,7 @@ type Set struct {
 	GetUserMetadata endpoint.Endpoint
 	GetMetadataByEntity endpoint.Endpoint
 	GetMetadataByEntityPaged endpoint.Endpoint
+	UpdateMetadata endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Logger) Set {
@@ -48,11 +49,18 @@ func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Lo
 			With(logger, "method", "getMetadataByEntityPagedEndpoint"))(getMetadataByEntityPagedEndpoint)
 	}
 
+	var updateMetdataEndpoint endpoint.Endpoint
+	{
+		updateMetdataEndpoint = UpdateMetadataEndpoint(svc)
+		updateMetdataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateMetadataEndpoint"))(updateMetdataEndpoint)
+	}
+
 	return Set{
 		AddUserMetadata: addUserMetadataEndpoint,
 		GetUserMetadata: getUserMetadataEndpoint,
 		GetMetadataByEntity: getMetadataByEndpoint,
 		GetMetadataByEntityPaged: getMetadataByEntityPagedEndpoint,
+		UpdateMetadata: updateMetdataEndpoint,
 	}
 }
 
@@ -147,6 +155,36 @@ func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.U
 
 		return GetMetadataByEntityPagedResponse{pagedResponse, err}, err
 		
+	}
+}
+
+func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadata]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UpdateMetadataRequest)
+
+		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+
+		currentQuery, queryErr := json.Marshal(req.CurrentQuery)
+
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		updatedQuery, queryErr := json.Marshal(req.UpdatedQuery)
+
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		query := "update \"UserMetadata\" set \"Metadata\" = '" + string(updatedQuery) + "' where \"Metadata\" @> '" + string(currentQuery) + "' and \"EntityName\" = '" + req.EntityName + "' and \"TenantIdentifier\" = '" + tenantId + "' "
+		
+		resp, err := s.ExecuteRawQuery(query)
+
+		if !resp {
+			return resp, err
+		}
+
+		return UpdateMetadataResponse{req.UpdatedQuery, nil}, nil
 	}
 }
 

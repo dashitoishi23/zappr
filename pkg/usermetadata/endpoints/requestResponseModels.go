@@ -54,3 +54,16 @@ type GetMetadataByEntityPagedResponse struct {
 }
 
 func (g *GetMetadataByEntityPagedResponse) Failed() error { return g.Err }
+
+type UpdateMetadataRequest struct {
+	CurrentQuery map[string]interface{} `json:"currentQuery"`
+	UpdatedQuery map[string]interface{} `json:"updatedQuery"`
+	EntityName string `json:"entityName"`
+}
+
+type UpdateMetadataResponse struct {
+	UpdatedQuery map[string]interface{} `json:"updatedQuery"`
+	Err error `json:"-"`
+}
+
+func (u *UpdateMetadataResponse) Failed() error { return u.Err }

@@ -52,6 +52,13 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		serverOptions...
 	)
 
+	updateMetadadaHandler := httptransport.NewServer(
+		endpoints.UpdateMetadata,
+		DecodeUpdateMetadataRequest,
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(usermetadataServers, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: addHandler,
@@ -72,11 +79,44 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		Server: getMetadataByEntityPagedHandler,
 		Route: "/usermetadata/paged/{entityName}",
 		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: updateMetadadaHandler,
+		Route: "/usermetadata/{entityName}",
+		Methods: []string{"PUT"},
 	})
 }
 
 func DecodeGetUserMetadataRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req usermetadataendpoints.GetUserMetadataRequest
+
+	decodedReq:= json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	path := r.URL.Path
+
+	parts := strings.Split(path, "/")
+
+	if len(parts) <= 1 {
+		return nil, errors.New(constants.RECORD_NOT_FOUND)
+	} else if parts[len(parts) - 1] == "" {
+		return nil, errors.New(constants.RECORD_NOT_FOUND)
+	}
+
+	req.EntityName = parts[len(parts) - 1]
+
+	return req, nil
+}
+
+func DecodeUpdateMetadataRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req usermetadataendpoints.UpdateMetadataRequest
 
 	decodedReq:= json.NewDecoder(r.Body)
 

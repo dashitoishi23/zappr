@@ -1,6 +1,7 @@
 package usermodels
 
 import (
+	"encoding/json"
 	"time"
 
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
@@ -14,6 +15,7 @@ type User struct {
 	Password   string `json:"password" `
 	IsADUser   bool   `json:"isAdUser"`
 	Locale     string `json:"locale" validate:"nonzero" `
+	Metadata json.RawMessage `json:"metadata" gorm:"type:jsonb"`
 	Role userrolemodels.UserRole `json:"role" gorm:"foreignKey:UserIdentifier"`
 	TenantIdentifier string `json:"tenantIdentifier" validate:"nonzero" `
 	CreatedOn time.Time `json:"createdOn" validate:"nonzero"`
