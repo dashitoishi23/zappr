@@ -21,6 +21,7 @@ type Set struct {
 	GetMetadataByEntity endpoint.Endpoint
 	GetMetadataByEntityPaged endpoint.Endpoint
 	UpdateMetadata endpoint.Endpoint
+	DeleteMetadata endpoint.Endpoint
 }
 
 func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Logger) Set {
@@ -55,12 +56,19 @@ func New(svc repository.BaseCRUD[usermetadatamodels.UserMetadata], logger log.Lo
 		updateMetdataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateMetadataEndpoint"))(updateMetdataEndpoint)
 	}
 
+	var deleteMetadataEndpoint endpoint.Endpoint
+	{
+		deleteMetadataEndpoint = DeleteMetadataEndpoint(svc)
+		deleteMetadataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "deleteMetadataEndpoint"))(deleteMetadataEndpoint)
+	}
+
 	return Set{
 		AddUserMetadata: addUserMetadataEndpoint,
 		GetUserMetadata: getUserMetadataEndpoint,
 		GetMetadataByEntity: getMetadataByEndpoint,
 		GetMetadataByEntityPaged: getMetadataByEntityPagedEndpoint,
 		UpdateMetadata: updateMetdataEndpoint,
+		DeleteMetadata: deleteMetadataEndpoint,
 	}
 }
 
@@ -88,7 +96,7 @@ func GetUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 			return nil, queryErr
 		}
 
-		res, err := s.QueryRawSql(query)
+		res, err := s.QueryRawSql("select * from \"UserMetadata\" where \"Metadata\" @> '" + query)
 
 		if len(res) == 0 {
 			return res, errors.New(constants.RECORD_NOT_FOUND)
@@ -141,7 +149,7 @@ func GetMetadataByEntityPagedEndpoint(s repository.BaseCRUD[usermetadatamodels.U
 			return nil, queryErr
 		}
 
-		res, err := s.QueryRawSqlPaged(query, req.Page, req.Size)
+		res, err := s.QueryRawSqlPaged("select * from \"UserMetadata\" where \"Metadata\" @> '" + query, req.Page, req.Size)
 
 		var pagedResponse commonmodels.PagedResponse[json.RawMessage]
 
@@ -164,19 +172,19 @@ func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 
 		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
 
-		currentQuery, queryErr := json.Marshal(req.CurrentQuery)
-
-		if queryErr != nil {
-			return nil, queryErr
-		}
-
 		updatedQuery, queryErr := json.Marshal(req.UpdatedQuery)
 
 		if queryErr != nil {
 			return nil, queryErr
 		}
 
-		query := "update \"UserMetadata\" set \"Metadata\" = '" + string(updatedQuery) + "' where \"Metadata\" @> '" + string(currentQuery) + "' and \"EntityName\" = '" + req.EntityName + "' and \"TenantIdentifier\" = '" + tenantId + "' "
+		sql, queryErr := constructJSONBQuery(req.CurrentQuery, req.EntityName, tenantId)
+
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		query := "update \"UserMetadata\" set \"Metadata\" = '" + string(updatedQuery) + "' where \"Metadata\" @> '" +  sql
 		
 		resp, err := s.ExecuteRawQuery(query)
 
@@ -188,6 +196,31 @@ func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 	}
 }
 
+func DeleteMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadata]) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(GetUserMetadataRequest)
+
+		tenantId := ctx.Value("requestScope").(commonmodels.RequestScope).UserTenant
+
+		query, queryErr := constructJSONBQuery(req.Query, req.EntityName, tenantId)
+
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		sqlString := "delete from \"UserMetadata\" where \"Metadata\" @> '" + query
+
+		resp, err := s.ExecuteRawQuery(sqlString)
+
+		if !resp {
+			return resp, err
+		}
+
+		return DeleteMetadataResponse{resp, nil}, nil
+
+	}
+}
+
 func constructJSONBQuery(query map[string]interface{}, entityName string, tenantIdentifier string) (string, error) {
 	jsonQuery, jsonErr := json.Marshal(query)
 
@@ -195,5 +228,5 @@ func constructJSONBQuery(query map[string]interface{}, entityName string, tenant
 			return "", jsonErr
 		}
 
-		return "select * from \"UserMetadata\" where \"Metadata\" @> '" + string(jsonQuery) + "' and \"TenantIdentifier\" = '" + tenantIdentifier + "' and \"EntityName\" = '"  + entityName + "' ", nil
+		return string(jsonQuery) + "' and \"TenantIdentifier\" = '" + tenantIdentifier + "' and \"EntityName\" = '"  + entityName + "' ", nil
 }

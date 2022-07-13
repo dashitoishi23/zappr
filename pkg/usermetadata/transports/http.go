@@ -59,6 +59,13 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		serverOptions...
 	)
 
+	deleteMetadataHandler := httptransport.NewServer(
+		endpoints.DeleteMetadata,
+		DecodeGetUserMetadataRequest,
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(usermetadataServers, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: addHandler,
@@ -84,6 +91,11 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		Server: updateMetadadaHandler,
 		Route: "/usermetadata/{entityName}",
 		Methods: []string{"PUT"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: deleteMetadataHandler,
+		Route: "/usermetadata/{entityName}",
+		Methods: []string{"DELETE"},
 	})
 }
 
@@ -96,10 +108,6 @@ func DecodeGetUserMetadataRequest(ctx context.Context, r *http.Request) (interfa
 
 	err := decodedReq.Decode(&req)
 
-	if err != nil {
-		return nil, err
-	}
-
 	path := r.URL.Path
 
 	parts := strings.Split(path, "/")
@@ -111,6 +119,15 @@ func DecodeGetUserMetadataRequest(ctx context.Context, r *http.Request) (interfa
 	}
 
 	req.EntityName = parts[len(parts) - 1]
+
+	if err == io.EOF {
+		req.Query = map[string]interface{}{}
+		return req, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }

@@ -67,3 +67,10 @@ type UpdateMetadataResponse struct {
 }
 
 func (u *UpdateMetadataResponse) Failed() error { return u.Err }
+
+type DeleteMetadataResponse struct {
+	IsDeleted bool `json:"isDeleted"`
+	Err error `json:"-"`
+}
+
+func (d *DeleteMetadataResponse) Failed() error { return d.Err }
