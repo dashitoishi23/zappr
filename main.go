@@ -54,7 +54,7 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	db, dbErr := database.OpenDBConnection(os.Getenv("POSTGRESQL_CONN_STRING"))
+	db, dbErr := database.OpenDBConnection()
 
 	var servers []commonmodels.HttpServerConfig
 
