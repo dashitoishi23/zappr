@@ -13,6 +13,7 @@ type Set struct {
 	ValidateLogin endpoint.Endpoint
 	SignupUser endpoint.Endpoint
 	UpdateUserRole endpoint.Endpoint
+	GenerateAPIKey endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -38,10 +39,18 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		updateUserRoleEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateUserRole"))(updateUserRoleEndpoint)
 	}
 
+	var generateAPIKeyEndpoint  endpoint.Endpoint
+	{
+		generateAPIKeyEndpoint = GenerateAPIKeyEndpoint(svc)
+
+		generateAPIKeyEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "generateAPIKey"))(generateAPIKeyEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
 		UpdateUserRole: updateUserRoleEndpoint,
+		GenerateAPIKey: generateAPIKeyEndpoint,
 	}
 }
 
@@ -75,5 +84,15 @@ func UpdateUserRoleEndpoint(s userservice.UserService) endpoint.Endpoint {
 		updatedUser, updateErr := s.UpdateUserRole(ctx, req.MasterRoleIdentifier, req.UserIdentifier)
 
 		return UpdateUserRoleResponse{updatedUser, updateErr}, updateErr
+	}
+}
+
+func GenerateAPIKeyEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(GenerateAPIKeyRequest)
+
+		apiKey, err := s.GenerateAPIKey(ctx, req.APIKeyName)
+
+		return GenerateAPIKeyResponse{apiKey, err}, err
 	}
 }

@@ -138,7 +138,7 @@ func DecodeUpdateMetadataRequest(ctx context.Context, r *http.Request) (interfac
 	if !requestScope.IsAllowedToUpdate() {
 		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 	}
-	
+
 	var req usermetadataendpoints.UpdateMetadataRequest
 
 	decodedReq:= json.NewDecoder(r.Body)

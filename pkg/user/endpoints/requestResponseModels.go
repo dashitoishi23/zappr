@@ -50,3 +50,15 @@ type UpdateUserRoleResponse struct {
 }
 
 func (u UpdateUserRoleResponse) Failed() error { return u.Err }
+
+type GenerateAPIKeyRequest struct {
+	APIKeyName string `json:"apiKeyName"`
+}
+
+type GenerateAPIKeyResponse struct {
+	APIKey string `json:"apiKey"`
+	Err 	error `json:"-"`
+}
+
+func (g GenerateAPIKeyResponse) Failed() error { return g.Err }
+

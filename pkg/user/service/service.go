@@ -14,6 +14,7 @@ import (
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/golang-jwt/jwt"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -26,7 +27,7 @@ type UserService interface {
 	UpdateUserRole(ctx context.Context, roleIdentifier string, 
 		userIdentifier string) (userrolemodels.UserRole, error)
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
-	// AddUser(ctx context.Context, newUser models.User) (models.User, error)
+	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
 }
 
 type userService struct {
@@ -34,17 +35,20 @@ type userService struct {
 	roleRepository repository.IRepository[masterrolemodels.Role]
 	userRoleRepository repository.IRepository[userrolemodels.UserRole]
 	tenantRepository repository.IRepository[tenantmodels.Tenant]
+	apiKeyRepository repository.IRepository[models.APIKey]
 } //class-like skeleton in Go
 
 func NewUserService(repository repository.IRepository[models.User], 
 	roleRepository repository.IRepository[masterrolemodels.Role], 
 	userRoleRepository repository.IRepository[userrolemodels.UserRole], 
-	tenantRepository repository.IRepository[tenantmodels.Tenant]) UserService { //makes userService struct implement UserService interface
+	tenantRepository repository.IRepository[tenantmodels.Tenant], 
+	apiKeyRepository repository.IRepository[models.APIKey]) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		repository: repository,
 		roleRepository: roleRepository,
 		userRoleRepository: userRoleRepository,
 		tenantRepository: tenantRepository,
+		apiKeyRepository: apiKeyRepository,
 
 	} //returns an address which points to userService to make changes in original memory address
 }
@@ -103,7 +107,7 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 	}
 
 	return newUser, nil
-	
+
 	}
 
 	role, roleErr := s.roleRepository.FindFirst(masterrolemodels.SearchableRole{
@@ -234,3 +238,26 @@ func (s *userService) FindUserById(ctx context.Context, identifier string) (mode
 
 	return res, err
 }
+
+func (s *userService) GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error) {
+	requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	newAPIKey := models.APIKey{
+		Secret: util.RandStringRunes(),
+		Scopes: requestScope.UserScopes,
+		UserIdentifier: requestScope.UserIdentifier,
+		Name: apiKeyName,
+	}
+
+	newAPIKey.InitFields(requestScope)
+
+	tx := s.apiKeyRepository.Add(newAPIKey)
+
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	return newAPIKey.Secret, nil
+
+}
+
