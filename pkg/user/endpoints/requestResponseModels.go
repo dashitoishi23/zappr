@@ -62,3 +62,14 @@ type GenerateAPIKeyResponse struct {
 
 func (g GenerateAPIKeyResponse) Failed() error { return g.Err }
 
+type LoginWithAPIKeyRequest struct {
+	APIKey string `json:"apiKey"`
+}
+
+type LoginWithAPIKeyResponse struct {
+	JWT string `json:"jwt"`
+	Err error `json:"-"`
+}
+
+func (l LoginWithAPIKeyResponse) Failed() error { return l.Err }
+

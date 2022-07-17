@@ -28,6 +28,7 @@ type UserService interface {
 		userIdentifier string) (userrolemodels.UserRole, error)
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
 	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
+	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
 }
 
 type userService struct {
@@ -204,32 +205,6 @@ func (s *userService) UpdateUserRole(ctx context.Context, roleIdentifier string,
 	return updatedUserRole, roleErr	
 }
 
-func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
-	userIdentifier string, userScopes pq.StringArray) (string, error) {
-	if userEmail == "" {
-		return "", errors.New(constants.INVALID_MODEL)
-	}
-
-	claims := commonmodels.JWTClaims{
-		userEmail,
-		tenantIdentifier,
-		userIdentifier,
-		userScopes,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-			Issuer: "zappr",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
-	signingKey := []byte(os.Getenv("JWT_SIGNING_KEY"))
-
-	ss, err := token.SignedString(signingKey)
-
-	return ss, err
-}
-
 func (s *userService) FindUserById(ctx context.Context, identifier string) (models.User, error) {
 	res, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
 		Identifier: identifier,
@@ -260,4 +235,58 @@ func (s *userService) GenerateAPIKey(ctx context.Context, apiKeyName string) (st
 	return newAPIKey.Secret, nil
 
 }
+
+func (s *userService) LoginWithAPIKey(ctx context.Context, apiKey string) (string, error) {
+	requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	_, err:= s.apiKeyRepository.FindFirst(models.APIKey{
+		Secret: apiKey,
+		TenantIdentifier: requestScope.UserTenant,
+		UserIdentifier: requestScope.UserIdentifier,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	existingUser, err := s.repository.FindFirstByAssociation("Role", models.SearchableUser{
+		Identifier: requestScope.UserIdentifier,
+		TenantIdentifier: requestScope.UserTenant,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return s.generateJWTToken(ctx, existingUser.Email, existingUser.TenantIdentifier, existingUser.Identifier, 
+	existingUser.Role.Scopes)
+}
+
+func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
+	userIdentifier string, userScopes pq.StringArray) (string, error) {
+	if userEmail == "" {
+		return "", errors.New(constants.INVALID_MODEL)
+	}
+
+	claims := commonmodels.JWTClaims{
+		userEmail,
+		tenantIdentifier,
+		userIdentifier,
+		userScopes,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+			Issuer: "zappr",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	
+	signingKey := []byte(os.Getenv("JWT_SIGNING_KEY"))
+
+	ss, err := token.SignedString(signingKey)
+
+	return ss, err
+}
+
+
 

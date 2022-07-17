@@ -49,6 +49,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	loginWithAPIKeyHandler := httptransport.NewServer(
+		endpoints.LoginWithAPIKey,
+		util.DecodeHTTPGenericRequest[userendpoint.LoginWithAPIKeyRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -69,6 +76,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Server: generateAPIKeyHandler,
 		Route: "/user/apikey",
 		Methods: []string{"GET"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: loginWithAPIKeyHandler,
+		Route: "/user/apikey/login",
+		Methods: []string{"POST"},
 	})
 
 }
