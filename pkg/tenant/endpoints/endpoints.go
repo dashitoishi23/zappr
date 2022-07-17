@@ -5,6 +5,7 @@ import (
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
+	tenantservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/service"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
@@ -22,10 +23,10 @@ type Set struct {
 	DeleteTenant endpoint.Endpoint
 }
 
-func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
+func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.TenantService, logger log.Logger) Set {
 	var createTenantEndpoint endpoint.Endpoint
 	{
-		createTenantEndpoint = CreateTenantEndpoint(svc)
+		createTenantEndpoint = CreateTenantEndpoint(tenantSvc)
 		createTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "createTenant"))(createTenantEndpoint)
 	}
 
@@ -83,13 +84,13 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], logger log.Logger) Set {
 	}
 }
 
-func CreateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint{
+func CreateTenantEndpoint(s tenantservice.TenantService) endpoint.Endpoint{
 	return func(ctx context.Context, request interface{}) (interface{}, error){
 		req := request.(CreateTenantRequest)
 
 		req.NewTenant.InitFields()
 
-		resp, err := s.Create(req.NewTenant)
+		resp, err := s.AddTenant(req.NewTenant)
 
 		if err != nil {
 			return CreateTenantResponse{resp, err}, err

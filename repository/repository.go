@@ -26,6 +26,7 @@ type IRepository[T any] interface {
 	ExecuteRawQuery(sql string, values ...interface{}) (bool, error)
 	QueryRawSql(sql string, conditions ...interface{}) ([]T, error)
 	QueryRawSqlPaged(sql string, page int, size int, conditions ...interface{}) (commonmodels.PagedResponse[T], error)
+	GetTransaction() *gorm.DB
 }
 
 type repository[T any] struct {
@@ -230,6 +231,12 @@ func (r *repository[T]) QueryRawSqlPaged(sql string, page int, size int,
 	}, nil	
 
 
+}
+
+func (r *repository[T]) GetTransaction() *gorm.DB {
+	tx := r.db.Begin()
+
+	return tx
 }
 
 

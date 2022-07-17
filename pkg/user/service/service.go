@@ -10,6 +10,7 @@ import (
 	constants "dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	masterrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/models"
+	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
@@ -25,21 +26,25 @@ type UserService interface {
 	UpdateUserRole(ctx context.Context, roleIdentifier string, 
 		userIdentifier string) (userrolemodels.UserRole, error)
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
+	// AddUser(ctx context.Context, newUser models.User) (models.User, error)
 }
 
 type userService struct {
 	repository repository.IRepository[models.User]
 	roleRepository repository.IRepository[masterrolemodels.Role]
 	userRoleRepository repository.IRepository[userrolemodels.UserRole]
+	tenantRepository repository.IRepository[tenantmodels.Tenant]
 } //class-like skeleton in Go
 
 func NewUserService(repository repository.IRepository[models.User], 
 	roleRepository repository.IRepository[masterrolemodels.Role], 
-	userRoleRepository repository.IRepository[userrolemodels.UserRole]) UserService { //makes userService struct implement UserService interface
+	userRoleRepository repository.IRepository[userrolemodels.UserRole], 
+	tenantRepository repository.IRepository[tenantmodels.Tenant]) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		repository: repository,
 		roleRepository: roleRepository,
 		userRoleRepository: userRoleRepository,
+		tenantRepository: tenantRepository,
 
 	} //returns an address which points to userService to make changes in original memory address
 }
@@ -58,6 +63,47 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 		}
 
 		newUser.Password = string(hashedPassword)
+	}
+
+	tenant, err := s.tenantRepository.FindFirst(&tenantmodels.SearchableTenant{
+		Identifier: newUser.TenantIdentifier,
+	})
+
+	if err != nil {
+		return newUser, err
+	}
+
+	if tenant.AdminEmail == newUser.Email {
+	role, roleErr := s.roleRepository.FindFirst(masterrolemodels.SearchableRole{
+	Name: "Admin",
+	TenantIdentifier: newUser.TenantIdentifier,
+	})
+
+	if roleErr != nil {
+		return newUser, roleErr
+	}
+
+	var scopes []string
+
+	role.Scopes.Scan(pq.Array(&scopes))
+	
+	newUser.Role = userrolemodels.UserRole{
+		UserIdentifier: newUser.Identifier,
+		RoleIdentifier: role.Identifier,
+		Scopes: role.Scopes,
+	}
+
+	newUser.Role.InitFields()
+
+	tx := s.repository.Add(newUser)
+
+
+	if tx.Error != nil {
+		return newUser, tx.Error
+	}
+
+	return newUser, nil
+	
 	}
 
 	role, roleErr := s.roleRepository.FindFirst(masterrolemodels.SearchableRole{
@@ -87,8 +133,6 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 	if tx.Error != nil {
 		return newUser, tx.Error
 	}
-
-	fmt.Print(tx.RowsAffected)
 
 	return newUser, nil
 

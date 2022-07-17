@@ -17,6 +17,7 @@ import (
 	masterroletransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/transports"
 	tenantendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/endpoints"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
+	tenantservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/service"
 	tenanttransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/transports"
 	userendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/endpoints"
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
@@ -62,7 +63,8 @@ func main() {
 		fmt.Print(db.Statement.Vars...)
 		var (
 			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
-		repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db))
+			repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db), 
+			repository.Repository[tenantmodels.Tenant](db))
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
 	)
@@ -71,7 +73,9 @@ func main() {
 
 		var (
 			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](db))
-			tenantEndpoint = tenantendpoint.New(tenantService, logger)
+			tenantSpecificService = tenantservice.NewService(repository.Repository[tenantmodels.Tenant](db), 
+			repository.Repository[masterrolemodels.Role](db))
+			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger)
 			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
 
