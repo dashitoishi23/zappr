@@ -11,10 +11,12 @@ import (
 )
 
 func OpenDBConnection() (*gorm.DB, error) {
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	database := os.Getenv("POSTGRES_DB")
-	host := os.Getenv("POSTGRES_HOST")
+	user := os.Getenv("ZAPPR_POSTGRES_USER")
+	password := os.Getenv("ZAPPR_POSTGRES_PASSWORD")
+	database := os.Getenv("ZAPPR_POSTGRES_DB")
+	host := os.Getenv("ZAPPR_POSTGRES_HOST")
+
+	fmt.Println(user, password, database, host)
 
 	dsn := dsnBuilder(user, password, database, host, 5432)
 
