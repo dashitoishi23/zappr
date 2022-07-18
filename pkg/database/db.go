@@ -16,7 +16,7 @@ func OpenDBConnection() (*gorm.DB, error) {
 	database := os.Getenv("ZAPPR_POSTGRES_DB")
 	host := os.Getenv("ZAPPR_POSTGRES_HOST")
 
-	fmt.Println(user, password, database, host)
+	print(password)
 
 	dsn := dsnBuilder(user, password, database, host, 5432)
 
