@@ -9,6 +9,12 @@ services:
       - "9000:9000"
     networks:
       - zappr
+    environment:
+      - ZAPPR_POSTGRES_PASSWORD=Passw0rdtechnovert
+      - ZAPPR_POSTGRES_USER=zappr_pg_local@zappr-local
+      - ZAPPR_POSTGRES_DB=zappr
+      - ZAPPR_POSTGRES_HOST=zappr-local.postgres.database.azure.com
+      - JWT_SIGNING_KEY=xTWX3hql42
 
   postgres:
     container_name: postgres
