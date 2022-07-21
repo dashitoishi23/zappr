@@ -5,6 +5,7 @@ go 1.18
 require github.com/go-kit/kit v0.12.0
 
 require (
+	github.com/gomodule/redigo v1.8.9 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

@@ -2,6 +2,7 @@ package tenantendpoint
 
 import (
 	"context"
+	"io"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
@@ -10,6 +11,7 @@ import (
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
+	"github.com/gomodule/redigo/redis"
 )
 
 type Set struct {
@@ -23,7 +25,8 @@ type Set struct {
 	DeleteTenant endpoint.Endpoint
 }
 
-func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.TenantService, logger log.Logger) Set {
+func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.TenantService, logger log.Logger, 
+	client redis.Conn) Set {
 	var createTenantEndpoint endpoint.Endpoint
 	{
 		createTenantEndpoint = CreateTenantEndpoint(tenantSvc)
@@ -32,7 +35,7 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.T
 
 	var findFirstTenantEndpoint endpoint.Endpoint
 	{
-		findFirstTenantEndpoint = FindFirstTenantEndpoint(svc)
+		findFirstTenantEndpoint = FindFirstTenantEndpoint(svc, client)
 		findFirstTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "findFirstTenant"))(findFirstTenantEndpoint)
 	}
 
@@ -101,19 +104,64 @@ func CreateTenantEndpoint(s tenantservice.TenantService) endpoint.Endpoint{
 	}
 }
 
-func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client redis.Conn) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var resp tenantmodels.Tenant
 
 		req := request.(FindFirstTenantRequest)
 
+		encodedQuery, err := util.JsonEncoder(req.CurrentTenant)
+
+		if err != nil {
+			return nil, err
+		}
+
+		stringy := string(encodedQuery)
+
+		cacheKey := "findFirstTenant" + stringy
+
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := client.Do("GET", cacheKey)
+
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+		}
+
+		if res != nil {
+			cachedObject, err := util.JsonDecoder[tenantmodels.Tenant](res.([]byte))
+
+			if err != nil {
+				return nil, err
+			}
+			return FindFirstTenantResponse{cachedObject, nil}, nil
+		}
+
 		resp, err = s.GetFirst(req.CurrentTenant)
 
 		if err != nil {
-			return FindFirstTenantResponse{resp, err}, err
+			return nil, err
 		}
 
-		return FindFirstTenantResponse{resp, err}, nil
+		encodedResponse, err := util.JsonEncoder(resp)
+
+		if err != nil {
+			return nil, err
+		}
+
+		strn := string(encodedResponse)
+
+		_, setErr := client.Do("SET", cacheKey, strn)
+
+		if setErr != nil {
+			return nil, err
+		}
+
+		return FindFirstTenantResponse{resp, err}, err
 	}
 }
 

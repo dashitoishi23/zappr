@@ -10,29 +10,35 @@ services:
     networks:
       - zappr
     environment:
-      - ZAPPR_POSTGRES_PASSWORD=Passw0rdtechnovert
-      - ZAPPR_POSTGRES_USER=zappr_pg_local@zappr-local
-      - ZAPPR_POSTGRES_DB=zappr
-      - ZAPPR_POSTGRES_HOST=zappr-local.postgres.database.azure.com
-      - JWT_SIGNING_KEY=xTWX3hql42
+      - ZAPPR_POSTGRES_PASSWORD
+      - ZAPPR_POSTGRES_USER
+      - ZAPPR_POSTGRES_DB
+      - ZAPPR_POSTGRES_HOST
+      - JWT_SIGNING_KEY
 
-  postgres:
-    container_name: postgres
-    image: postgres:14.3
-    restart: always
-    environment:
-      - POSTGRES_DB=zappr
+  redis-master:
+    image: "bitnami/redis:latest"
     ports:
-      - "5432:5432"
-    networks:
-      - postgres
-    volumes:
-      - postgres:/var/lib/postgresql/data
+      - "6379:6379"
+    environment:
+      - REDIS_REPLICATION_MODE
+      - REDIS_PASSWORD
+
+  redis-replica:
+    image: "bitnami/redis:latest"
+    ports:
+      - "6379"
+    depends_on:
+      - redis-master
+    environment:
+      - REDIS_REPLICATION_MODE
+      - REDIS_MASTER_HOST
+      - REDIS_MASTER_PORT_NUMBER
+      - REDIS_MASTER_PASSWORD
+      - REDIS_PASSWORD
 
 networks:
   zappr:
-  postgres:
 
 volumes:
   zappr:
-  postgres:

@@ -15,3 +15,13 @@ func JsonEncoder[T any](obj T) ([]byte, error) {
 	return encodedBytesBuffer.Bytes(), nil
 
 }
+
+func JsonDecoder[T any](encodedBytes []byte) (T, error) {
+	var decodedResp T
+
+	if err := json.Unmarshal(encodedBytes, &decodedResp); err != nil {
+		return decodedResp, err
+	}
+
+	return decodedResp, nil
+}

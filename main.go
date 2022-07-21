@@ -27,6 +27,7 @@ import (
 	usermetadatamodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/models"
 	usermetadatatransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/usermetadata/transports"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
+	redisutil "dev.azure.com/technovert-vso/Zappr/_git/Zappr/redis"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/log"
@@ -57,6 +58,12 @@ func main() {
 
 	db, dbErr := database.OpenDBConnection()
 
+	redisPool := &redisutil.RedisPool{}
+
+	redisPool.NewPool()
+
+	defer redisPool.Pool.Close()
+
 	var servers []commonmodels.HttpServerConfig
 
 	if dbErr == nil {
@@ -76,7 +83,7 @@ func main() {
 			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](db))
 			tenantSpecificService = tenantservice.NewService(repository.Repository[tenantmodels.Tenant](db), 
 			repository.Repository[masterrolemodels.Role](db))
-			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger)
+			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger, redisPool.GetPool().Get())
 			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
 
