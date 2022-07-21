@@ -21,21 +21,7 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - REDIS_REPLICATION_MODE
-      - REDIS_PASSWORD
-
-  redis-replica:
-    image: "bitnami/redis:latest"
-    ports:
-      - "6379"
-    depends_on:
-      - redis-master
-    environment:
-      - REDIS_REPLICATION_MODE
-      - REDIS_MASTER_HOST
-      - REDIS_MASTER_PORT_NUMBER
-      - REDIS_MASTER_PASSWORD
-      - REDIS_PASSWORD
+      - ALLOW_EMPTY_PASSWORD=yes
 
 networks:
   zappr:
