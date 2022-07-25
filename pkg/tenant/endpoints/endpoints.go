@@ -2,11 +2,11 @@ package tenantendpoint
 
 import (
 	"context"
-	"io"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
 	tenantservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/service"
+	redisutil "dev.azure.com/technovert-vso/Zappr/_git/Zappr/redis"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
@@ -41,7 +41,7 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.T
 
 	var getAllTenantsEndpoint endpoint.Endpoint
 	{
-		getAllTenantsEndpoint = GetAllTenantsEndpoint(svc)
+		getAllTenantsEndpoint = GetAllTenantsEndpoint(svc, client)
 		getAllTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getAllTenants"))(getAllTenantsEndpoint)
 	}
 
@@ -53,19 +53,19 @@ func New(svc repository.BaseCRUD[tenantmodels.Tenant], tenantSvc tenantservice.T
 
 	var getTenantByIdEndpoint endpoint.Endpoint
 	{
-		getTenantByIdEndpoint = GetTenantByIdEndpoint(svc)
+		getTenantByIdEndpoint = GetTenantByIdEndpoint(svc, client)
 		getTenantByIdEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getTenantById"))(getTenantByIdEndpoint)
 	}
 
 	var updatedTenantEndpoint endpoint.Endpoint
 	{
-		updatedTenantEndpoint = UpdateTenantEndpoint(svc)
+		updatedTenantEndpoint = UpdateTenantEndpoint(svc, client)
 		updatedTenantEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateTenant"))(updatedTenantEndpoint)
 	}
 
 	var getPagedTenantsEndpoint endpoint.Endpoint
 	{
-		getPagedTenantsEndpoint = GetPagedTenantsEndpoint(svc)
+		getPagedTenantsEndpoint = GetPagedTenantsEndpoint(svc, client)
 		getPagedTenantsEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "pagedTenantsEndpoint"))(getPagedTenantsEndpoint)
 	}
 
@@ -110,35 +110,22 @@ func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client 
 
 		req := request.(FindFirstTenantRequest)
 
-		encodedQuery, err := util.JsonEncoder(req.CurrentTenant)
+		stringifiedQuery, err := util.StringifyJson(req.CurrentTenant)
 
 		if err != nil {
 			return nil, err
 		}
 
-		stringy := string(encodedQuery)
+		cacheKey := "tenant:findFirstTenant:" + stringifiedQuery
 
-		cacheKey := "findFirstTenant" + stringy
+		cachedResponse, err := redisutil.DecodeCacheResponse[tenantmodels.Tenant](client, cacheKey)
 
 		if err != nil {
 			return nil, err
 		}
 
-		res, err := client.Do("GET", cacheKey)
-
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-		}
-
-		if res != nil {
-			cachedObject, err := util.JsonDecoder[tenantmodels.Tenant](res.([]byte))
-
-			if err != nil {
-				return nil, err
-			}
-			return FindFirstTenantResponse{cachedObject, nil}, nil
+		if len(cachedResponse.Identifier) != 0 {
+			return FindFirstTenantResponse{cachedResponse, nil}, nil
 		}
 
 		resp, err = s.GetFirst(req.CurrentTenant)
@@ -147,48 +134,68 @@ func FindFirstTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client 
 			return nil, err
 		}
 
-		encodedResponse, err := util.JsonEncoder(resp)
-
-		if err != nil {
-			return nil, err
-		}
-
-		strn := string(encodedResponse)
-
-		_, setErr := client.Do("SET", cacheKey, strn)
-
-		if setErr != nil {
-			return nil, err
-		}
+		err = redisutil.SetCache(client, cacheKey, resp)
 
 		return FindFirstTenantResponse{resp, err}, err
 	}
 }
 
-func GetAllTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func GetAllTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client redis.Conn) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var resp []tenantmodels.Tenant
+
+		cacheKey := "tenant:getAll" 
+
+		decodedResponse, err := redisutil.DecodeCacheResponse[[]tenantmodels.Tenant](client, cacheKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if decodedResponse != nil {
+			return GetAllTenantsResponse{decodedResponse, nil}, nil
+		}
 
 		resp, err = s.GetAll()
 
 		if err != nil {
-			return GetAllTenantsResponse{resp, err}, err
+			return nil, err
 		}
 
-		return GetAllTenantsResponse{resp, err}, nil
+		err = redisutil.SetCache(client, cacheKey, resp)
+
+		return GetAllTenantsResponse{resp, err}, err
 
 	}
 }
 
-func GetTenantByIdEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func GetTenantByIdEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client redis.Conn) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var resp tenantmodels.Tenant
 
 		req := request.(string)
 
+		cacheKey := "tenant:getTenantById:" + req
+
+		cachedResponse, err := redisutil.DecodeCacheResponse[tenantmodels.Tenant](client, cacheKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(cachedResponse.Identifier) != 0 {
+			return cachedResponse, nil
+		}
+
 		resp, err = s.GetFirst(&tenantmodels.Tenant{
 			Identifier: req,
 		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = redisutil.SetCache(client, cacheKey, resp)
 
 		return resp, err
 	}
@@ -211,7 +218,7 @@ func FindTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.En
 	}
 }
 
-func UpdateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func UpdateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client redis.Conn) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(UpdateTenantRequest)
 
@@ -230,17 +237,60 @@ func UpdateTenantEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.E
 				resp, _ := s.Update(req.NewTenant)				
 				close(currentEntity)
 				close(txnError)
+
+				if err != nil {
+					return nil, err
+				}
+
+				tenantKeys, err := client.Do("KEYS", "tenant:*")
+
+				if err != nil {
+					return nil, err
+				}
+
+				keys := util.StringifyTo2dArray(tenantKeys.([]interface{}))
+
+				delErr := redisutil.DeleteMultipleKeys(client, keys)
+
+				if delErr != nil {
+					return nil, delErr
+				}
+
 				return UpdateTenantResponse{resp, err}, err
 			}	
 		}
 	}
 }
 
-func GetPagedTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant]) endpoint.Endpoint {
+func GetPagedTenantsEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client redis.Conn) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(commonmodels.PagedRequest[FindTenantsRequest])
 
+		stringifiedQuery, err := util.StringifyJson(req)
+
+		if err != nil {
+			return nil, err
+		}
+
+		cacheKey := "tenant:getPagedTenants" + stringifiedQuery
+
+		cachedResponse, err := redisutil.DecodeCacheResponse[commonmodels.PagedResponse[tenantmodels.Tenant]](client, cacheKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if cachedResponse.Pages != 0 {
+			return GetPagedTenantResponse{cachedResponse, nil}, nil
+		}
+
 		res, err := s.GetPaged(req.Entity.CurrentTenant, req.Page, req.Size)
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = redisutil.SetCache(client, cacheKey, res)
 
 		return GetPagedTenantResponse{res, err}, err
 	}

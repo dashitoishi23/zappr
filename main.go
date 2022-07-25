@@ -62,7 +62,9 @@ func main() {
 
 	redisPool.NewPool()
 
-	defer redisPool.Pool.Close()
+	client := redisPool.GetPool().Get()
+
+	defer client.Close()
 
 	var servers []commonmodels.HttpServerConfig
 
@@ -83,7 +85,7 @@ func main() {
 			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](db))
 			tenantSpecificService = tenantservice.NewService(repository.Repository[tenantmodels.Tenant](db), 
 			repository.Repository[masterrolemodels.Role](db))
-			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger, redisPool.GetPool().Get())
+			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger, client)
 			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
 

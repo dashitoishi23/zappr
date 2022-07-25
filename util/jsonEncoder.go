@@ -25,3 +25,23 @@ func JsonDecoder[T any](encodedBytes []byte) (T, error) {
 
 	return decodedResp, nil
 }
+
+func StringifyTo2dArray(encodedbytes []interface{}) ([]string) {
+	var strings []string
+
+	for _, byteArray := range encodedbytes {
+		strings = append(strings, string(byteArray.([]byte)))
+	}
+
+	return strings
+}
+
+func StringifyJson[T any](obj T) (string, error) {
+	encodedJson, err := JsonEncoder(obj)
+
+	if err != nil {
+		return "", nil
+	}
+
+	return string(encodedJson), nil
+}
