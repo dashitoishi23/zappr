@@ -1,6 +1,11 @@
 package redisutil
 
-import "github.com/gomodule/redigo/redis"
+import (
+	"fmt"
+	"os"
+
+	"github.com/gomodule/redigo/redis"
+)
 
 type RedisPool struct {
 	Pool *redis.Pool
@@ -11,10 +16,28 @@ func(r *RedisPool) NewPool()  {
 		MaxIdle: 80,
 		MaxActive: 0,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", "zappracr.azurecr.io:6379")
+			redisHost := os.Getenv("REDIS_HOST")
+
+			if redisHost == "" {
+				redisHost = "0.0.0.0"
+			}
+
+			c, err := redis.Dial("tcp", redisHost + ":6379")
 			
 			if err != nil {
 				panic(err)
+			}
+
+			redisPwd := os.Getenv("REDIS_PASSWORD")
+
+			fmt.Print(redisPwd)
+
+			if redisPwd != "" {
+				_, authErr := c.Do("AUTH", redisPwd)
+
+				if authErr != nil {
+				panic(authErr)
+			}
 			}
 
 			return c, err
