@@ -7,24 +7,18 @@ services:
       context: .
     ports:
       - "9000:9000"
-    networks:
-      - zappr
     environment:
       - ZAPPR_POSTGRES_PASSWORD
       - ZAPPR_POSTGRES_USER
       - ZAPPR_POSTGRES_DB
       - ZAPPR_POSTGRES_HOST
       - JWT_SIGNING_KEY
+    depends_on:
+      - redis
 
-  redis-master:
+  redis:
     image: "bitnami/redis:latest"
     ports:
       - "6379:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
-
-networks:
-  zappr:
-
-volumes:
-  zappr:
