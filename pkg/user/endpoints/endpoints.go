@@ -2,7 +2,11 @@ package userendpoint
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"os"
 
+	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -17,6 +21,7 @@ type Set struct {
 	GenerateAPIKey endpoint.Endpoint
 	LoginWithAPIKey endpoint.Endpoint
 	RegisterGoogleOAuth endpoint.Endpoint
+	AuthenticateGoogleOAuthRedirect endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -63,6 +68,13 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		registerGoogleOAuthEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "registerGoogleOauth"))(registerGoogleOAuthEndpoint)
 	}
 
+	var authenticateGoogleOAuthRedirectEndpoint endpoint.Endpoint
+	{
+		authenticateGoogleOAuthRedirectEndpoint = AuthenticateGoogleOAuthRedirectEndpoint(svc)
+
+		authenticateGoogleOAuthRedirectEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateGoogleOauthRedirect"))(authenticateGoogleOAuthRedirectEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -70,6 +82,7 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		GenerateAPIKey: generateAPIKeyEndpoint,
 		LoginWithAPIKey: loginWithAPIKeyEndpoint,
 		RegisterGoogleOAuth: registerGoogleOAuthEndpoint,
+		AuthenticateGoogleOAuthRedirect: authenticateGoogleOAuthRedirectEndpoint,
 	}
 }
 
@@ -130,13 +143,21 @@ func RegisterGoogleOAuthEndpoint(s userservice.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(RegisterGoogleOAuthRequest)
 
+		metadata := map[string]interface{}{
+			"client_id": req.ClientID,
+			"client_secret": req.ClientSecret,
+			"redirect_uri": req.RedirectURI,
+		}
+
+		metadataBytes, jsonErr := json.Marshal(metadata)
+
+		if jsonErr != nil {
+			return nil, jsonErr
+		}
+
 		newOAuthProvider := usermodels.OAuthProvider{
 			Name: "google",
-			Metadata: map[string]interface{}{
-				"client_id": req.ClientID,
-				"client_secret": req.ClientSecret,
-				"redirect_uri": req.RedirectURI,
-			},
+			Metadata: metadataBytes,
 		}
 
 		newOAuthProvider.InitFields()
@@ -147,3 +168,19 @@ func RegisterGoogleOAuthEndpoint(s userservice.UserService) endpoint.Endpoint {
 
 	}
 }
+
+func AuthenticateGoogleOAuthRedirectEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(AuthenticateGoogleOAuthRedirectRequest)
+
+		if req.State != os.Getenv("GOOGLE_OAUTH_STATE") {
+			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+		}
+
+		jwt, err := s.AuthenticateGoogleOAuthRedirect(ctx, req.Code)
+
+		return AuthenticateGoogleOAuthRedirectResponse{jwt, err}, err
+	}
+
+}
+

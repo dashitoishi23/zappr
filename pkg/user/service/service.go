@@ -2,9 +2,9 @@ package userservice
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -33,6 +33,7 @@ type UserService interface {
 	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
 	RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error)
+	AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error)
 }
 
 type userService struct {
@@ -175,27 +176,6 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 		jwt, _ := s.generateJWTToken(ctx, existingUser.Email, existingUser.TenantIdentifier, existingUser.Identifier, 
 		existingUser.Role.Scopes)
 
-		conf := &oauth2.Config{
-			ClientID:     "548368247582-nrt0g3llbjfgf7q8lakije8kh713rla1.apps.googleusercontent.com",
-			ClientSecret: "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",
-			RedirectURL:  "http://localhost:8000/oauth/google",
-			Scopes: []string{
-				"https://www.googleapis.com/auth/bigquery",
-				"https://www.googleapis.com/auth/blogger",
-			},
-			Endpoint: google.Endpoint,
-		}
-		url := conf.AuthCodeURL("state")
-		fmt.Printf("Visit the URL for the auth dialog: %v", url)
-
-		tok, err := conf.Exchange(ctx, "4/0AdQt8qgFiScWMJihi4QITPY96yXK8EyZifucM4uTvNi6oXBSifUDVBTqL_jkIMqZYmfP-A")
-		if err != nil {
-			log.Fatal(err)
-		}
-		client := conf.Client(ctx, tok)
-
-		fmt.Print(client)
-
 		return jwt, nil
 	}
 
@@ -323,10 +303,24 @@ func (s *userService) RegisterGoogleOAuth(ctx context.Context, newOAuthProvider 
 		return "", tx.Error
 	}
 
+	bytes, err := json.Marshal(newOAuthProvider.Metadata)
+
+	if err != nil {
+		return "", err
+	}
+
+	var metadata map[string]interface{}
+
+	marshalErr := json.Unmarshal(bytes, &metadata)
+
+	if marshalErr != nil {
+		return "", marshalErr
+	}
+
 	conf := &oauth2.Config{
-		ClientID:     newOAuthProvider.Metadata["client_id"].(string),
-		ClientSecret: newOAuthProvider.Metadata["client_secret"].(string),
-		RedirectURL:  newOAuthProvider.Metadata["redirect_uri"].(string),
+		ClientID:     metadata["client_id"].(string),
+		ClientSecret: metadata["client_secret"].(string),
+		RedirectURL:  metadata["redirect_uri"].(string),
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",
@@ -341,6 +335,68 @@ func (s *userService) RegisterGoogleOAuth(ctx context.Context, newOAuthProvider 
 
 	return url, nil
 
+}
+
+func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error) {
+	providerDetails, err := s.oAuthProviderRepository.FindFirst(models.OAuthProvider{
+		Name: "google",
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	bytes, err := json.Marshal(providerDetails.Metadata)
+
+	if err != nil {
+		return "", err
+	}
+
+	var metadata map[string]interface{}
+
+	marshalErr := json.Unmarshal(bytes, &metadata)
+
+	if marshalErr != nil {
+		return "", marshalErr
+	}
+
+	conf := &oauth2.Config{
+		ClientID:     metadata["client_id"].(string),
+		ClientSecret: metadata["client_secret"].(string),
+		RedirectURL:  metadata["redirect_uri"].(string),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+			"openid",
+		},
+		Endpoint: google.Endpoint,
+	}
+
+	token, err := conf.Exchange(ctx, code)
+
+	if err != nil {
+		return "", err
+	}
+
+	authenticatedClient := conf.Client(ctx, token)
+
+	resp, err := authenticatedClient.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	var clientResp interface{}
+
+	respErr := json.NewDecoder(resp.Body).Decode(&clientResp)
+
+	if respErr != nil {
+		return "", respErr
+	}
+
+	return token.AccessToken, err
 }
 
 

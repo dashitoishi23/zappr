@@ -86,3 +86,15 @@ type RegisterGoogleOAuthResponse struct {
 
 func (r RegisterGoogleOAuthResponse) Failed() error { return r.Err }
 
+type AuthenticateGoogleOAuthRedirectRequest struct {
+	Code string `json:"code"`
+	State string `json:"state"`
+}
+
+type AuthenticateGoogleOAuthRedirectResponse struct {
+	Jwt string `json:"jwt"`
+	Err error `json:"error"`
+}
+
+func (a *AuthenticateGoogleOAuthRedirectResponse) Failed() error { return a.Err }
+

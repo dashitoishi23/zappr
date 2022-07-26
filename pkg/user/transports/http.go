@@ -63,6 +63,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	authenticateGoogleOAuthRedirect := httptransport.NewServer(
+		endpoints.AuthenticateGoogleOAuthRedirect,
+		DecodeGoogleOAuthRedirect,
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -93,6 +100,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Server: registerGoogleOAuth,
 		Route: "/oauth/google",
 		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: false,
+		Server: authenticateGoogleOAuthRedirect,
+		Route: "/oauth/google/callback",
+		Methods: []string{"GET"},
 	})
 
 }
@@ -118,4 +130,27 @@ func DecodeLoginRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	req.CurrentUser.TenantIdentifier = parts[len(parts) - 1]
 
 	return req, err
+}
+
+func DecodeGoogleOAuthRedirect(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req userendpoint.AuthenticateGoogleOAuthRedirectRequest
+
+	queries := r.URL.Query()
+
+	uriCode := queries.Get("code")
+	uriState := queries.Get("state")
+
+	if uriCode != "" {
+		req.Code = uriCode
+	} else {
+		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+	}
+
+	if uriState != "" {
+		req.State = uriState
+	} else {
+		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
+	}
+
+	return req, nil
 }
