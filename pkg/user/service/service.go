@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"gopkg.in/validator.v2"
 )
 
@@ -29,6 +32,7 @@ type UserService interface {
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
 	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
+	RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error)
 }
 
 type userService struct {
@@ -37,19 +41,22 @@ type userService struct {
 	userRoleRepository repository.IRepository[userrolemodels.UserRole]
 	tenantRepository repository.IRepository[tenantmodels.Tenant]
 	apiKeyRepository repository.IRepository[models.APIKey]
+	oAuthProviderRepository repository.IRepository[models.OAuthProvider]
 } //class-like skeleton in Go
 
 func NewUserService(repository repository.IRepository[models.User], 
 	roleRepository repository.IRepository[masterrolemodels.Role], 
 	userRoleRepository repository.IRepository[userrolemodels.UserRole], 
 	tenantRepository repository.IRepository[tenantmodels.Tenant], 
-	apiKeyRepository repository.IRepository[models.APIKey]) UserService { //makes userService struct implement UserService interface
+	apiKeyRepository repository.IRepository[models.APIKey], 
+	oAuthProviderRepository repository.IRepository[models.OAuthProvider]) UserService { //makes userService struct implement UserService interface
 	return &userService{
 		repository: repository,
 		roleRepository: roleRepository,
 		userRoleRepository: userRoleRepository,
 		tenantRepository: tenantRepository,
 		apiKeyRepository: apiKeyRepository,
+		oAuthProviderRepository: oAuthProviderRepository,
 
 	} //returns an address which points to userService to make changes in original memory address
 }
@@ -167,6 +174,27 @@ func (s *userService) LoginUser (ctx context.Context, currentUser models.UserLog
 	if hashErr == nil {
 		jwt, _ := s.generateJWTToken(ctx, existingUser.Email, existingUser.TenantIdentifier, existingUser.Identifier, 
 		existingUser.Role.Scopes)
+
+		conf := &oauth2.Config{
+			ClientID:     "548368247582-nrt0g3llbjfgf7q8lakije8kh713rla1.apps.googleusercontent.com",
+			ClientSecret: "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",
+			RedirectURL:  "http://localhost:8000/oauth/google",
+			Scopes: []string{
+				"https://www.googleapis.com/auth/bigquery",
+				"https://www.googleapis.com/auth/blogger",
+			},
+			Endpoint: google.Endpoint,
+		}
+		url := conf.AuthCodeURL("state")
+		fmt.Printf("Visit the URL for the auth dialog: %v", url)
+
+		tok, err := conf.Exchange(ctx, "4/0AdQt8qgFiScWMJihi4QITPY96yXK8EyZifucM4uTvNi6oXBSifUDVBTqL_jkIMqZYmfP-A")
+		if err != nil {
+			log.Fatal(err)
+		}
+		client := conf.Client(ctx, tok)
+
+		fmt.Print(client)
 
 		return jwt, nil
 	}
@@ -286,6 +314,33 @@ func (s *userService) generateJWTToken(_ context.Context, userEmail string, tena
 	ss, err := token.SignedString(signingKey)
 
 	return ss, err
+}
+
+func (s *userService) RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error) {
+	tx := s.oAuthProviderRepository.Add(newOAuthProvider)
+
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	conf := &oauth2.Config{
+		ClientID:     newOAuthProvider.Metadata["client_id"].(string),
+		ClientSecret: newOAuthProvider.Metadata["client_secret"].(string),
+		RedirectURL:  newOAuthProvider.Metadata["redirect_uri"].(string),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+			"openid",
+		},
+		Endpoint: google.Endpoint,
+	}
+
+	stateToken := os.Getenv("GOOGLE_OAUTH_STATE")
+	
+	url := conf.AuthCodeURL(stateToken)
+
+	return url, nil
+
 }
 
 

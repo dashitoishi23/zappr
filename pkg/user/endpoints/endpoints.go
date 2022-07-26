@@ -3,6 +3,7 @@ package userendpoint
 import (
 	"context"
 
+	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
 	"github.com/go-kit/kit/endpoint"
@@ -15,6 +16,7 @@ type Set struct {
 	UpdateUserRole endpoint.Endpoint
 	GenerateAPIKey endpoint.Endpoint
 	LoginWithAPIKey endpoint.Endpoint
+	RegisterGoogleOAuth endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -54,12 +56,20 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		loginWithAPIKeyEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "loginWithAPIKey"))(loginWithAPIKeyEndpoint)
 	}
 
+	var registerGoogleOAuthEndpoint endpoint.Endpoint
+	{
+		registerGoogleOAuthEndpoint = RegisterGoogleOAuthEndpoint(svc)
+
+		registerGoogleOAuthEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "registerGoogleOauth"))(registerGoogleOAuthEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
 		UpdateUserRole: updateUserRoleEndpoint,
 		GenerateAPIKey: generateAPIKeyEndpoint,
 		LoginWithAPIKey: loginWithAPIKeyEndpoint,
+		RegisterGoogleOAuth: registerGoogleOAuthEndpoint,
 	}
 }
 
@@ -113,5 +123,27 @@ func LoginWithAPIKeyEndpoint(s userservice.UserService) endpoint.Endpoint {
 		jwt, err := s.LoginWithAPIKey(ctx, req.APIKey)
 
 		return LoginWithAPIKeyResponse{jwt, err}, err
+	}
+}
+
+func RegisterGoogleOAuthEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(RegisterGoogleOAuthRequest)
+
+		newOAuthProvider := usermodels.OAuthProvider{
+			Name: "google",
+			Metadata: map[string]interface{}{
+				"client_id": req.ClientID,
+				"client_secret": req.ClientSecret,
+				"redirect_uri": req.RedirectURI,
+			},
+		}
+
+		newOAuthProvider.InitFields()
+
+		url, err := s.RegisterGoogleOAuth(ctx, newOAuthProvider)
+
+		return RegisterGoogleOAuthResponse{url, err}, err
+
 	}
 }

@@ -73,7 +73,8 @@ func main() {
 		var (
 			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
 			repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db), 
-			repository.Repository[tenantmodels.Tenant](db), repository.Repository[usermodels.APIKey](db))
+			repository.Repository[tenantmodels.Tenant](db), repository.Repository[usermodels.APIKey](db), 
+			repository.Repository[usermodels.OAuthProvider](db))
 
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)

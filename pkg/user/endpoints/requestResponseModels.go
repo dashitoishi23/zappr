@@ -73,3 +73,16 @@ type LoginWithAPIKeyResponse struct {
 
 func (l LoginWithAPIKeyResponse) Failed() error { return l.Err }
 
+type RegisterGoogleOAuthRequest struct {
+	ClientID string `json:"clientId"`
+	ClientSecret string `json:"clientSecret"`
+	RedirectURI string `json:"redirectURI"`
+}
+
+type RegisterGoogleOAuthResponse struct {
+	AuthDialogURL string `json:"authDialogURL"`
+	Err error `json:"-"`
+}
+
+func (r RegisterGoogleOAuthResponse) Failed() error { return r.Err }
+

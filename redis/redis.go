@@ -19,7 +19,7 @@ func(r *RedisPool) NewPool()  {
 			redisHost := os.Getenv("REDIS_HOST")
 
 			if redisHost == "" {
-				redisHost = "0.0.0.0"
+				redisHost = "redis"
 			}
 
 			c, err := redis.Dial("tcp", redisHost + ":6379")

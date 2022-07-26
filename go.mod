@@ -5,6 +5,8 @@ go 1.18
 require github.com/go-kit/kit v0.12.0
 
 require (
+	cloud.google.com/go/compute v1.7.0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
@@ -17,7 +19,10 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
 	gorm.io/driver/postgres v1.3.8 // indirect
 	gorm.io/gorm v1.23.8 // indirect
@@ -37,4 +42,5 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/oklog/oklog v0.3.2
 	github.com/urfave/negroni v1.0.0
+	golang.org/x/oauth2 v0.0.0-20220722155238-128564f6959c
 )
