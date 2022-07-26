@@ -2,6 +2,7 @@ package tenantendpoint
 
 import (
 	"context"
+	"fmt"
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	tenantmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/tenant/models"
@@ -184,6 +185,7 @@ func GetTenantByIdEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client re
 		}
 
 		if len(cachedResponse.Identifier) != 0 {
+			fmt.Print("cache hit")
 			return cachedResponse, nil
 		}
 
