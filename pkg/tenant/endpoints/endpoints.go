@@ -184,8 +184,9 @@ func GetTenantByIdEndpoint(s repository.BaseCRUD[tenantmodels.Tenant], client re
 			return nil, err
 		}
 
+		fmt.Print(cachedResponse)
+
 		if len(cachedResponse.Identifier) != 0 {
-			fmt.Print("cache hit")
 			return cachedResponse, nil
 		}
 
