@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -34,6 +35,7 @@ type UserService interface {
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
 	RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error)
 	AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error)
+	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, error)
 }
 
 type userService struct {
@@ -77,6 +79,8 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 
 		newUser.Password = string(hashedPassword)
 	}
+
+	newUser.InitFields()
 
 	tenant, err := s.tenantRepository.FindFirst(&tenantmodels.SearchableTenant{
 		Identifier: newUser.TenantIdentifier,
@@ -397,6 +401,60 @@ func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code 
 	}
 
 	return token.AccessToken, err
+}
+
+func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, error) {
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
+
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode == 401 {
+		return "", errors.New(constants.UNAUTHORIZED_ATTEMPT)
+	}
+
+	defer resp.Body.Close()
+
+	var clientResp map[string]interface{}
+
+	respErr := json.NewDecoder(resp.Body).Decode(&clientResp)
+
+	if respErr != nil {
+		return "", respErr
+	}
+
+	email := clientResp["email"].(string)
+
+	existingUser, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
+		Email: email,
+	})
+
+	if err != nil && err.Error() == constants.RECORD_NOT_FOUND {
+		newUser := models.User{
+			Email: email,
+			IsADUser: true,
+			Metadata: []byte("{}"),
+			Name: clientResp["name"].(string),
+			TenantIdentifier: tenantIdentifier,
+			Locale: clientResp["locale"].(string),
+			ProfilePictureURL: clientResp["picture"].(string),
+		}
+
+		newAddedUser, err := s.SignupUser(ctx, newUser)
+
+		if err != nil {
+			return "", err
+		}
+
+		existingUser = newAddedUser
+	} else if err != nil {
+		return "", err
+	}
+
+	jwt, err := s.generateJWTToken(ctx, email, tenantIdentifier, existingUser.Identifier, existingUser.Role.Scopes)
+
+	return jwt, err
 }
 
 

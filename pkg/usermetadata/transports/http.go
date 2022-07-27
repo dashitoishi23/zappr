@@ -133,11 +133,6 @@ func DecodeGetUserMetadataRequest(ctx context.Context, r *http.Request) (interfa
 }
 
 func DecodeUpdateMetadataRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
-
-	if !requestScope.IsAllowedToUpdate() {
-		return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-	}
 
 	var req usermetadataendpoints.UpdateMetadataRequest
 

@@ -78,10 +78,6 @@ func AddUserMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetada
 
 		requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
 
-		if !requestScope.IsAllowedToWrite() {
-			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-		}
-
 		req.NewUserMetadata.InitFields(requestScope)
 
 		res, err := s.Create(req.NewUserMetadata)
@@ -178,10 +174,6 @@ func UpdateMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 
 		requestScope :=  ctx.Value("requestScope").(commonmodels.RequestScope)
 
-		if !requestScope.IsAllowedToUpdate() {
-			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
-		}
-
 		tenantId := requestScope.UserTenant
 
 		updatedQuery, queryErr := json.Marshal(req.UpdatedQuery)
@@ -213,10 +205,6 @@ func DeleteMetadataEndpoint(s repository.BaseCRUD[usermetadatamodels.UserMetadat
 		req := request.(GetUserMetadataRequest)
 
 		requestScope := ctx.Value("requestScope").(commonmodels.RequestScope)
-
-		if !requestScope.IsAllowedToDelete() {
-			return nil, errors.New(constants.INVALID_MODEL)
-		}
 
 		tenantId := requestScope.UserTenant
 

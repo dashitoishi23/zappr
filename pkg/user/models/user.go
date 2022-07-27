@@ -14,6 +14,7 @@ type User struct {
 	Email      string `json:"email" validate:"nonzero" `
 	Password   string `json:"password" `
 	IsADUser   bool   `json:"isAdUser"`
+	ProfilePictureURL string `json:"profilePictureURL"`
 	Locale     string `json:"locale" validate:"nonzero" `
 	Metadata json.RawMessage `json:"metadata" gorm:"type:jsonb"`
 	Role userrolemodels.UserRole `json:"role" gorm:"foreignKey:UserIdentifier"`

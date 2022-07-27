@@ -98,3 +98,8 @@ type AuthenticateGoogleOAuthRedirectResponse struct {
 
 func (a *AuthenticateGoogleOAuthRedirectResponse) Failed() error { return a.Err }
 
+type AuthenticateGoogleAccessTokenRequest struct {
+	AccessToken string `json:"accessToken"`
+	TenantIdentifier string `json:"tenantIdentifier"`
+}
+
