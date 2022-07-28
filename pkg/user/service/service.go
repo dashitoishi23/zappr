@@ -21,6 +21,7 @@ import (
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/facebook"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/validator.v2"
 )
@@ -33,7 +34,7 @@ type UserService interface {
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
 	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
-	RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error)
+	RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray) (string, error)
 	AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error)
 	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, error)
 }
@@ -274,33 +275,7 @@ func (s *userService) LoginWithAPIKey(ctx context.Context, apiKey string) (strin
 	existingUser.Role.Scopes)
 }
 
-func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
-	userIdentifier string, userScopes pq.StringArray) (string, error) {
-	if userEmail == "" {
-		return "", errors.New(constants.INVALID_MODEL)
-	}
-
-	claims := commonmodels.JWTClaims{
-		userEmail,
-		tenantIdentifier,
-		userIdentifier,
-		userScopes,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-			Issuer: "zappr",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
-	signingKey := []byte(os.Getenv("JWT_SIGNING_KEY"))
-
-	ss, err := token.SignedString(signingKey)
-
-	return ss, err
-}
-
-func (s *userService) RegisterGoogleOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider) (string, error) {
+func (s *userService) RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray) (string, error) {
 	tx := s.oAuthProviderRepository.Add(newOAuthProvider)
 
 	if tx.Error != nil {
@@ -321,19 +296,19 @@ func (s *userService) RegisterGoogleOAuth(ctx context.Context, newOAuthProvider 
 		return "", marshalErr
 	}
 
+	var oAuthScopes []string
+
+	scopes.Scan(pq.Array(&oAuthScopes))
+
 	conf := &oauth2.Config{
 		ClientID:     metadata["client_id"].(string),
 		ClientSecret: metadata["client_secret"].(string),
-		RedirectURL:  metadata["redirect_uri"].(string),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-			"openid",
-		},
-		Endpoint: google.Endpoint,
+		RedirectURL:  "http://localhost:9000/facebook",
+		Scopes: oAuthScopes,
+		Endpoint: s.getOAuthEndpoint(newOAuthProvider.Name),
 	}
 
-	stateToken := os.Getenv("GOOGLE_OAUTH_STATE")
+	stateToken := os.Getenv("STATE")
 	
 	url := conf.AuthCodeURL(stateToken)
 
@@ -455,6 +430,43 @@ func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessT
 	jwt, err := s.generateJWTToken(ctx, email, tenantIdentifier, existingUser.Identifier, existingUser.Role.Scopes)
 
 	return jwt, err
+}
+
+func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
+	userIdentifier string, userScopes pq.StringArray) (string, error) {
+	if userEmail == "" {
+		return "", errors.New(constants.INVALID_MODEL)
+	}
+
+	claims := commonmodels.JWTClaims{
+		userEmail,
+		tenantIdentifier,
+		userIdentifier,
+		userScopes,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+			Issuer: "zappr",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	
+	signingKey := []byte(os.Getenv("JWT_SIGNING_KEY"))
+
+	ss, err := token.SignedString(signingKey)
+
+	return ss, err
+}
+
+func (s *userService) getOAuthEndpoint(oAuthProvider string) oauth2.Endpoint {
+	switch (oAuthProvider) {
+	case "google": 
+		return google.Endpoint
+	case "facebook":
+		return facebook.Endpoint
+	}
+
+	return oauth2.Endpoint{}
 }
 
 

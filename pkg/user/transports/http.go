@@ -56,9 +56,9 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
-	registerGoogleOAuth := httptransport.NewServer(
-		endpoints.RegisterGoogleOAuth,
-		util.DecodeHTTPGenericRequest[userendpoint.RegisterGoogleOAuthRequest],
+	registerOAuth := httptransport.NewServer(
+		endpoints.RegisterOAuth,
+		util.DecodeHTTPGenericRequest[userendpoint.RegisterOAuthRequest],
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
@@ -104,8 +104,8 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
-		Server: registerGoogleOAuth,
-		Route: "/oauth/google",
+		Server: registerOAuth,
+		Route: "/oauth",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: false,

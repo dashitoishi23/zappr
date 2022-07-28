@@ -3,6 +3,7 @@ package userendpoint
 import (
 	models "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/userrole/models"
+	"github.com/lib/pq"
 )
 
 type GenerateTokenRequest struct {
@@ -73,10 +74,12 @@ type LoginWithAPIKeyResponse struct {
 
 func (l LoginWithAPIKeyResponse) Failed() error { return l.Err }
 
-type RegisterGoogleOAuthRequest struct {
+type RegisterOAuthRequest struct {
+	ProviderName string `json:"providerName"`
 	ClientID string `json:"clientId"`
 	ClientSecret string `json:"clientSecret"`
 	RedirectURI string `json:"redirectURI"`
+	Scopes pq.StringArray `json:"scopes"`
 }
 
 type RegisterGoogleOAuthResponse struct {

@@ -5,6 +5,7 @@ import (
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/urfave/negroni"
 )
 
@@ -22,5 +23,11 @@ func RootHttpHandler(servers []commonmodels.HttpServerConfig) http.Handler {
 		}
 	}
 
-	return r
+	var handler http.Handler
+
+	handler = r
+
+	handler = cors.AllowAll().Handler(r)
+	
+	return handler
 }
