@@ -21,6 +21,7 @@ func EncodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, respo
 		return nil
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(response)
 }
