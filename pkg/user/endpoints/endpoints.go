@@ -21,8 +21,8 @@ type Set struct {
 	GenerateAPIKey endpoint.Endpoint
 	LoginWithAPIKey endpoint.Endpoint
 	RegisterOAuth endpoint.Endpoint
-	AuthenticateGoogleOAuthRedirect endpoint.Endpoint
-	AuthenticateGoogleAccessToken endpoint.Endpoint
+	AuthenticateOAuthRedirect endpoint.Endpoint
+	AuthenticateAccessToken endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -69,18 +69,18 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		registerOAuthEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "registerGoogleOauth"))(registerOAuthEndpoint)
 	}
 
-	var authenticateGoogleOAuthRedirectEndpoint endpoint.Endpoint
+	var authenticateOAuthRedirectEndpoint endpoint.Endpoint
 	{
-		authenticateGoogleOAuthRedirectEndpoint = AuthenticateGoogleOAuthRedirectEndpoint(svc)
+		authenticateOAuthRedirectEndpoint = AuthenticateOAuthRedirectEndpoint(svc)
 
-		authenticateGoogleOAuthRedirectEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateGoogleOauthRedirect"))(authenticateGoogleOAuthRedirectEndpoint)
+		authenticateOAuthRedirectEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateOauthRedirect"))(authenticateOAuthRedirectEndpoint)
 	}
 
-	var authenticateGoogleAccessTokenEndpoint endpoint.Endpoint
+	var authenticateAccessTokenEndpoint endpoint.Endpoint
 	{
-		authenticateGoogleAccessTokenEndpoint = AuthenticateGoogleAccessTokenEndpoint(svc)
+		authenticateAccessTokenEndpoint = AuthenticateAccessTokenEndpoint(svc)
 
-		authenticateGoogleAccessTokenEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateGoogleAccessToken"))(authenticateGoogleAccessTokenEndpoint)
+		authenticateAccessTokenEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateGoogleAccessToken"))(authenticateAccessTokenEndpoint)
 	}
 
 	return Set{
@@ -90,8 +90,8 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		GenerateAPIKey: generateAPIKeyEndpoint,
 		LoginWithAPIKey: loginWithAPIKeyEndpoint,
 		RegisterOAuth: registerOAuthEndpoint,
-		AuthenticateGoogleOAuthRedirect: authenticateGoogleOAuthRedirectEndpoint,
-		AuthenticateGoogleAccessToken: authenticateGoogleAccessTokenEndpoint,
+		AuthenticateOAuthRedirect: authenticateOAuthRedirectEndpoint,
+		AuthenticateAccessToken: authenticateAccessTokenEndpoint,
 	}
 }
 
@@ -156,6 +156,7 @@ func RegisterOAuthEndpoint(s userservice.UserService) endpoint.Endpoint {
 			"client_id": req.ClientID,
 			"client_secret": req.ClientSecret,
 			"redirect_uri": req.RedirectURI,
+			"scopes": req.Scopes,
 		}
 
 		metadataBytes, jsonErr := json.Marshal(metadata)
@@ -167,18 +168,17 @@ func RegisterOAuthEndpoint(s userservice.UserService) endpoint.Endpoint {
 		newOAuthProvider := usermodels.OAuthProvider{
 			Name: req.ProviderName,
 			Metadata: metadataBytes,
+			TenantIdentifier: req.TenantIdentifier,
 		}
 
-		newOAuthProvider.InitFields()
-
-		url, err := s.RegisterOAuth(ctx, newOAuthProvider, req.Scopes)
+		url, err := s.RegisterOAuth(ctx, newOAuthProvider, req.Scopes, req.Host)
 
 		return RegisterGoogleOAuthResponse{url, err}, err
 
 	}
 }
 
-func AuthenticateGoogleOAuthRedirectEndpoint(s userservice.UserService) endpoint.Endpoint {
+func AuthenticateOAuthRedirectEndpoint(s userservice.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(AuthenticateGoogleOAuthRedirectRequest)
 
@@ -186,20 +186,20 @@ func AuthenticateGoogleOAuthRedirectEndpoint(s userservice.UserService) endpoint
 			return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 		}
 
-		jwt, err := s.AuthenticateGoogleOAuthRedirect(ctx, req.Code)
+		jwt, err := s.AuthenticateOAuthRedirect(ctx, req.Code, req.ProviderName, req.TenantIdentifier, req.Host)
 
 		return AuthenticateGoogleOAuthRedirectResponse{jwt, err}, err
 	}
 
 }
 
-func AuthenticateGoogleAccessTokenEndpoint(s userservice.UserService) endpoint.Endpoint {
+func AuthenticateAccessTokenEndpoint(s userservice.UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(AuthenticateGoogleAccessTokenRequest)
+		req := request.(AuthenticateAccessTokenRequest)
 
-		jwt, user, err := s.AuthenticateGoogleAccessToken(ctx, req.AccessToken, req.TenantIdentifier)
+		jwt, user, err := s.AuthenticateGoogleAccessToken(ctx, req.AccessToken, req.TenantIdentifier, req.ProviderName)
 
-		return AuthenticateGoogleAccessTokenResponse{jwt, user, err}, err
+		return AuthenticateAccessTokenResponse{jwt, user, err}, err
 	}
 }
 

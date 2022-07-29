@@ -34,9 +34,12 @@ type UserService interface {
 	FindUserById(ctx context.Context, identifier string) (models.User, error)
 	GenerateAPIKey(ctx context.Context, apiKeyName string) (string, error)
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
-	RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray) (string, error)
-	AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error)
-	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, models.User, error)
+	RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray, 
+		host string) (string, error)
+	AuthenticateOAuthRedirect(ctx context.Context, code string, providerName string, tenantIdentifier string, 
+		host string) (string, error)
+	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string, 
+		providerName string) (string, models.User, error)
 }
 
 type userService struct {
@@ -275,11 +278,32 @@ func (s *userService) LoginWithAPIKey(ctx context.Context, apiKey string) (strin
 	existingUser.Role.Scopes)
 }
 
-func (s *userService) RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray) (string, error) {
-	tx := s.oAuthProviderRepository.Add(newOAuthProvider)
+func (s *userService) RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray, 
+	host string) (string, error) {
+	existingProvider, err := s.oAuthProviderRepository.FindFirst(models.OAuthProvider{
+		Name: newOAuthProvider.Name,
+		TenantIdentifier: newOAuthProvider.TenantIdentifier,
+	})
 
-	if tx.Error != nil {
-		return "", tx.Error
+	if err != nil && err.Error() == constants.RECORD_NOT_FOUND {
+		newOAuthProvider.InitFields()
+
+		tx := s.oAuthProviderRepository.Add(newOAuthProvider)
+
+		if tx.Error != nil {
+			return "", tx.Error
+		}
+	} else if err != nil {
+		return "", err
+	} else {
+		newOAuthProvider.Identifier = existingProvider.Identifier
+		updatedProvider, err := s.oAuthProviderRepository.Update(newOAuthProvider)
+
+		if err != nil {
+			return "", err
+		}
+
+		newOAuthProvider = updatedProvider
 	}
 
 	bytes, err := json.Marshal(newOAuthProvider.Metadata)
@@ -303,8 +327,8 @@ func (s *userService) RegisterOAuth(ctx context.Context, newOAuthProvider models
 	conf := &oauth2.Config{
 		ClientID:     metadata["client_id"].(string),
 		ClientSecret: metadata["client_secret"].(string),
-		RedirectURL:  "http://localhost:9000/facebook",
-		Scopes: oAuthScopes,
+		RedirectURL:  "http://" + host + "/oauth/" + newOAuthProvider.Name + "/callback/" + newOAuthProvider.TenantIdentifier,
+		Scopes: scopes,
 		Endpoint: s.getOAuthEndpoint(newOAuthProvider.Name),
 	}
 
@@ -316,9 +340,11 @@ func (s *userService) RegisterOAuth(ctx context.Context, newOAuthProvider models
 
 }
 
-func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error) {
+func (s *userService) AuthenticateOAuthRedirect(ctx context.Context, code string, providerName string, 
+	tenantIdentifier string, host string) (string, error) {
 	providerDetails, err := s.oAuthProviderRepository.FindFirst(models.OAuthProvider{
-		Name: "google",
+		Name: providerName,
+		TenantIdentifier: tenantIdentifier,
 	})
 
 	if err != nil {
@@ -339,16 +365,27 @@ func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code 
 		return "", marshalErr
 	}
 
+	var scopes []string
+
+	scopeBytes, err := util.JsonEncoder(metadata["scopes"].([]interface{}))
+
+	if err != nil {
+		return "", err
+	}
+
+	scopes, err = util.JsonDecoder[[]string](scopeBytes)
+
+	if err != nil {
+		return "", err
+	}
+
+
 	conf := &oauth2.Config{
 		ClientID:     metadata["client_id"].(string),
 		ClientSecret: metadata["client_secret"].(string),
-		RedirectURL:  metadata["redirect_uri"].(string),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-			"openid",
-		},
-		Endpoint: google.Endpoint,
+		RedirectURL: "http://" + host + "/oauth/" + providerDetails.Name + "/callback/" + tenantIdentifier,
+		Scopes: scopes,
+		Endpoint: s.getOAuthEndpoint(providerDetails.Name),
 	}
 
 	token, err := conf.Exchange(ctx, code)
@@ -379,8 +416,8 @@ func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code 
 }
 
 func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, 
-	tenantIdentifier string) (string, models.User, error) {
-	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
+	tenantIdentifier string, providerName string) (string, models.User, error) {
+	resp, err := http.Get(s.getProviderAPIURL(providerName) + accessToken)
 
 	if err != nil {
 		return "", models.User{}, err
@@ -404,17 +441,23 @@ func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessT
 
 	existingUser, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
 		Email: email,
+		TenantIdentifier: tenantIdentifier,
 	})
 
 	if err != nil && err.Error() == constants.RECORD_NOT_FOUND {
+		locale, ok := clientResp["locale"].(string) 
+		if !ok {
+			locale = "en-US"
+		}
+
 		newUser := models.User{
 			Email: email,
 			IsADUser: true,
 			Metadata: []byte("{}"),
 			Name: clientResp["name"].(string),
 			TenantIdentifier: tenantIdentifier,
-			Locale: clientResp["locale"].(string),
-			ProfilePictureURL: clientResp["picture"].(string),
+			Locale: locale,
+			ProfilePictureURL: s.getProfilePicture(providerName, clientResp),
 		}
 
 		newAddedUser, err := s.SignupUser(ctx, newUser)
@@ -468,6 +511,31 @@ func (s *userService) getOAuthEndpoint(oAuthProvider string) oauth2.Endpoint {
 	}
 
 	return oauth2.Endpoint{}
+}
+
+func (s *userService) getProviderAPIURL(oAuthProvider string) string {
+	switch(oAuthProvider) {
+	case "google":
+		return "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
+	case "facebook":
+		return "https://graph.facebook.com/me?fields=id,name,email,picture,locale&access_token="
+	}
+
+	return ""
+}
+
+func (s *userService) getProfilePicture(providerName string, clientResp map[string]interface{}) string {
+	switch(providerName) {
+	case "google":
+		return clientResp["picture"].(string)
+	case "facebook":
+		picture := clientResp["picture"].(map[string]interface{})
+		pictureData := picture["data"].(map[string]interface{})
+
+		return pictureData["url"].(string)
+	}
+
+	return ""
 }
 
 

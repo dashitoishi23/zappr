@@ -65,7 +65,7 @@ func NewHandler(endpoints masterroleendpoint.Set, logger log.Logger) []commonmod
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server:    findFirstHandler,
-		Route:     "/role",
+	Route:     "/role",
 		Methods:   []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,

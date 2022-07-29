@@ -58,21 +58,21 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 
 	registerOAuth := httptransport.NewServer(
 		endpoints.RegisterOAuth,
-		util.DecodeHTTPGenericRequest[userendpoint.RegisterOAuthRequest],
+		DecodeRegisterOAuthRequest,
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
 
-	authenticateGoogleOAuthRedirect := httptransport.NewServer(
-		endpoints.AuthenticateGoogleOAuthRedirect,
-		DecodeGoogleOAuthRedirect,
+	authenticateOAuthRedirect := httptransport.NewServer(
+		endpoints.AuthenticateOAuthRedirect,
+		DecodeOAuthRedirect,
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
 
-	authenticateGoogleAccessToken := httptransport.NewServer(
-		endpoints.AuthenticateGoogleAccessToken,
-		DecodeAuthenticateGoogleAccessTokenRequest,
+	authenticateAccessToken := httptransport.NewServer(
+		endpoints.AuthenticateAccessToken,
+		DecodeAuthenticateAccessTokenRequest,
 		util.EncodeHTTPGenericResponse,
 		serverOptions...
 	)
@@ -105,17 +105,17 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: registerOAuth,
-		Route: "/oauth",
+		Route: "/oauth/{tenantIdentifier}",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
-		Server: authenticateGoogleOAuthRedirect,
-		Route: "/oauth/google/callback",
+		Server: authenticateOAuthRedirect,
+		Route: "/oauth/{providerName}/callback/{tenantIdentifier}",
 		Methods: []string{"GET"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
-		Server: authenticateGoogleAccessToken,
-		Route: "/oauth/google/accesstoken/{tenantIdentifier}",
+		Server: authenticateAccessToken,
+		Route: "/oauth/{providerName}/accesstoken/{tenantIdentifier}",
 		Methods: []string{"POST"},
 	})
 
@@ -126,6 +126,8 @@ func DecodeLoginRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	var req userendpoint.ValidateLoginRequest
 
 	parts := strings.Split(r.URL.Path, "/")
+
+	defer r.Body.Close()
 
 	decodedReq := json.NewDecoder(r.Body)
 
@@ -144,10 +146,16 @@ func DecodeLoginRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	return req, err
 }
 
-func DecodeGoogleOAuthRedirect(ctx context.Context, r *http.Request) (interface{}, error) {
+func DecodeOAuthRedirect(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req userendpoint.AuthenticateGoogleOAuthRedirectRequest
 
 	queries := r.URL.Query()
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	req.ProviderName = parts[len(parts) - 3]
+	req.TenantIdentifier = parts[len(parts) - 1]
+	req.Host = r.Host
 
 	uriCode := queries.Get("code")
 	uriState := queries.Get("state")
@@ -167,10 +175,12 @@ func DecodeGoogleOAuthRedirect(ctx context.Context, r *http.Request) (interface{
 	return req, nil
 }
 
-func DecodeAuthenticateGoogleAccessTokenRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var req userendpoint.AuthenticateGoogleAccessTokenRequest
+func DecodeAuthenticateAccessTokenRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req userendpoint.AuthenticateAccessTokenRequest
 
 	parts := strings.Split(r.URL.Path, "/")
+
+	defer r.Body.Close()
 
 	decodedReq := json.NewDecoder(r.Body)
 
@@ -183,6 +193,28 @@ func DecodeAuthenticateGoogleAccessTokenRequest(ctx context.Context, r *http.Req
 	}
 
 	req.TenantIdentifier = parts[len(parts) - 1]
+	req.ProviderName = parts[len(parts) - 3]
+
+	return req, err
+
+}
+
+func DecodeRegisterOAuthRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req userendpoint.RegisterOAuthRequest
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	req.TenantIdentifier = parts[len(parts) - 1]
+
+	req.Host = r.Host
+
+	defer r.Body.Close()
+
+	decodedReq := json.NewDecoder(r.Body)
+
+	decodedReq.DisallowUnknownFields()
+
+	err := decodedReq.Decode(&req)
 
 	return req, err
 

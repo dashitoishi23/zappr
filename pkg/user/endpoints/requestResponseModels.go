@@ -80,6 +80,8 @@ type RegisterOAuthRequest struct {
 	ClientSecret string `json:"clientSecret"`
 	RedirectURI string `json:"redirectURI"`
 	Scopes pq.StringArray `json:"scopes"`
+	Host string `json:"host"`
+	TenantIdentifier string `json:"tenantIdentifier"`
 }
 
 type RegisterGoogleOAuthResponse struct {
@@ -92,6 +94,9 @@ func (r RegisterGoogleOAuthResponse) Failed() error { return r.Err }
 type AuthenticateGoogleOAuthRedirectRequest struct {
 	Code string `json:"code"`
 	State string `json:"state"`
+	ProviderName string `json:"provideName"`
+	Host string `json:"host"`
+	TenantIdentifier string `json:"tenantIdentifier"`
 }
 
 type AuthenticateGoogleOAuthRedirectResponse struct {
@@ -101,16 +106,17 @@ type AuthenticateGoogleOAuthRedirectResponse struct {
 
 func (a *AuthenticateGoogleOAuthRedirectResponse) Failed() error { return a.Err }
 
-type AuthenticateGoogleAccessTokenRequest struct {
+type AuthenticateAccessTokenRequest struct {
 	AccessToken string `json:"accessToken"`
 	TenantIdentifier string `json:"tenantIdentifier"`
+	ProviderName string `json:"providerName"`
 }
 
-type AuthenticateGoogleAccessTokenResponse struct {
+type AuthenticateAccessTokenResponse struct {
 	Jwt string `json:"jwt"`
 	User models.User `json:"user"`
 	Err error `json:"-"`
 }
 
-func (a *AuthenticateGoogleAccessTokenResponse) Failed() error { return a.Err }
+func (a *AuthenticateAccessTokenResponse) Failed() error { return a.Err }
 

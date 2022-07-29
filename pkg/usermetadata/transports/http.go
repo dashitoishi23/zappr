@@ -81,7 +81,7 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		Server: getMetadataByEntityHandler,
 		Route: "/usermetadata/all/{entityName}",
 		Methods: []string{"GET"},
-	}, commonmodels.HttpServerConfig{
+}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getMetadataByEntityPagedHandler,
 		Route: "/usermetadata/paged/{entityName}",

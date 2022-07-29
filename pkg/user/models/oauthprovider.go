@@ -7,9 +7,10 @@ import (
 )
 
 type OAuthProvider struct {
-	Identifier string `json:"identifier"`
+	Identifier string `json:"identifier" gorm:"primaryKey"`
 	Name       string `json:"name"`
-	Metadata   json.RawMessage `json:"metadata" gorm:"type:jsonb"` 
+	Metadata   json.RawMessage `json:"metadata" gorm:"type:jsonb"`
+	TenantIdentifier string `json:"tenantIdentifier"`
 }
 
 func (o *OAuthProvider) InitFields() {
