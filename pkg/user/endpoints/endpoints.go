@@ -197,7 +197,7 @@ func AuthenticateAccessTokenEndpoint(s userservice.UserService) endpoint.Endpoin
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(AuthenticateAccessTokenRequest)
 
-		jwt, user, err := s.AuthenticateGoogleAccessToken(ctx, req.AccessToken, req.TenantIdentifier, req.ProviderName)
+		jwt, user, err := s.AuthenticateAccessToken(ctx, req.AccessToken, req.TenantIdentifier, req.ProviderName)
 
 		return AuthenticateAccessTokenResponse{jwt, user, err}, err
 	}

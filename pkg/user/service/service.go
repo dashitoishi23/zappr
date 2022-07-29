@@ -38,7 +38,7 @@ type UserService interface {
 		host string) (string, error)
 	AuthenticateOAuthRedirect(ctx context.Context, code string, providerName string, tenantIdentifier string, 
 		host string) (string, error)
-	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string, 
+	AuthenticateAccessToken(ctx context.Context, accessToken string, tenantIdentifier string, 
 		providerName string) (string, models.User, error)
 }
 
@@ -415,7 +415,7 @@ func (s *userService) AuthenticateOAuthRedirect(ctx context.Context, code string
 	return token.AccessToken, err
 }
 
-func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, 
+func (s *userService) AuthenticateAccessToken(ctx context.Context, accessToken string, 
 	tenantIdentifier string, providerName string) (string, models.User, error) {
 	resp, err := http.Get(s.getProviderAPIURL(providerName) + accessToken)
 
