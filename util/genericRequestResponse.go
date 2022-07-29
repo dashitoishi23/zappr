@@ -69,6 +69,8 @@ func DecodeHTTPPagedRequest[T any](ctx context.Context, r *http.Request) (interf
 		pagedRequest.Size = 5
 	}
 
+	defer r.Body.Close()
+
 	decodedReq := json.NewDecoder(r.Body)
 
 	decodedReq.DisallowUnknownFields()
@@ -109,6 +111,8 @@ func DecodeHTTPGenericRequest[T any](ctx context.Context,  r *http.Request) (int
 
 
 	var req T
+
+	defer r.Body.Close()
 
 	decodedReq := json.NewDecoder(r.Body)
 

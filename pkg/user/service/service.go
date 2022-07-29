@@ -36,7 +36,7 @@ type UserService interface {
 	LoginWithAPIKey (ctx context.Context, apiKey string) (string, error)
 	RegisterOAuth(ctx context.Context, newOAuthProvider models.OAuthProvider, scopes pq.StringArray) (string, error)
 	AuthenticateGoogleOAuthRedirect(ctx context.Context, code string) (string, error)
-	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, error)
+	AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, models.User, error)
 }
 
 type userService struct {
@@ -378,15 +378,16 @@ func (s *userService) AuthenticateGoogleOAuthRedirect(ctx context.Context, code 
 	return token.AccessToken, err
 }
 
-func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, tenantIdentifier string) (string, error) {
+func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessToken string, 
+	tenantIdentifier string) (string, models.User, error) {
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
 
 	if err != nil {
-		return "", err
+		return "", models.User{}, err
 	}
 
 	if resp.StatusCode == 401 {
-		return "", errors.New(constants.UNAUTHORIZED_ATTEMPT)
+		return "", models.User{}, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 	}
 
 	defer resp.Body.Close()
@@ -396,7 +397,7 @@ func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessT
 	respErr := json.NewDecoder(resp.Body).Decode(&clientResp)
 
 	if respErr != nil {
-		return "", respErr
+		return "", models.User{}, respErr
 	}
 
 	email := clientResp["email"].(string)
@@ -419,17 +420,17 @@ func (s *userService) AuthenticateGoogleAccessToken(ctx context.Context, accessT
 		newAddedUser, err := s.SignupUser(ctx, newUser)
 
 		if err != nil {
-			return "", err
+			return "", models.User{}, err
 		}
 
 		existingUser = newAddedUser
 	} else if err != nil {
-		return "", err
+		return "", models.User{}, err
 	}
 
 	jwt, err := s.generateJWTToken(ctx, email, tenantIdentifier, existingUser.Identifier, existingUser.Role.Scopes)
 
-	return jwt, err
+	return jwt, existingUser, err
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 

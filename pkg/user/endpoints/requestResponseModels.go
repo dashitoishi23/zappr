@@ -106,3 +106,11 @@ type AuthenticateGoogleAccessTokenRequest struct {
 	TenantIdentifier string `json:"tenantIdentifier"`
 }
 
+type AuthenticateGoogleAccessTokenResponse struct {
+	Jwt string `json:"jwt"`
+	User models.User `json:"user"`
+	Err error `json:"-"`
+}
+
+func (a *AuthenticateGoogleAccessTokenResponse) Failed() error { return a.Err }
+
