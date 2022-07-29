@@ -75,7 +75,7 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		NeedsAuth: true,
 		Server: getHandler,
 		Route: "/usermetadata/{entityName}",
-		Methods: []string{"GET"},
+		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getMetadataByEntityHandler,
@@ -85,7 +85,7 @@ func NewHandler(endpoints usermetadataendpoints.Set, logger log.Logger) []common
 		NeedsAuth: true,
 		Server: getMetadataByEntityPagedHandler,
 		Route: "/usermetadata/paged/{entityName}",
-		Methods: []string{"GET"},
+		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: updateMetadadaHandler,
@@ -204,7 +204,7 @@ func DecodeGetMetadataByEntityPagedRequest(ctx context.Context, r *http.Request)
 
 	decodedReq.DisallowUnknownFields()
 
-	err := decodedReq.Decode(&req.Query)
+	err := decodedReq.Decode(&req)
 
 	if err == io.EOF {
 		req.Query = map[string]interface{}{}
