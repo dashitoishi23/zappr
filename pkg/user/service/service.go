@@ -40,6 +40,7 @@ type UserService interface {
 		host string) (string, error)
 	AuthenticateAccessToken(ctx context.Context, accessToken string, tenantIdentifier string, 
 		providerName string) (string, models.User, error)
+	UpdateUser(ctx context.Context, newUser models.UpdateUser) (models.User, error)
 }
 
 type userService struct {
@@ -474,6 +475,27 @@ func (s *userService) AuthenticateAccessToken(ctx context.Context, accessToken s
 	jwt, err := s.generateJWTToken(ctx, email, tenantIdentifier, existingUser.Identifier, existingUser.Role.Scopes)
 
 	return jwt, existingUser, err
+}
+
+func (s *userService) UpdateUser(ctx context.Context, newUser models.UpdateUser) (models.User, error) {
+	existingUser,err := s.repository.FindFirst(models.SearchableUser{
+		Identifier: newUser.Identifier,
+		TenantIdentifier: newUser.TenantIdentifier,
+	})
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	updatedUser := existingUser
+
+	updatedUser.Name = newUser.Name
+	updatedUser.ProfilePictureURL = newUser.ProfilePictureURL
+	updatedUser.TenantIdentifier = newUser.TenantIdentifier
+
+	user, err := s.repository.Update(updatedUser)
+
+	return user, err
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 

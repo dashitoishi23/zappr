@@ -23,6 +23,7 @@ type Set struct {
 	RegisterOAuth endpoint.Endpoint
 	AuthenticateOAuthRedirect endpoint.Endpoint
 	AuthenticateAccessToken endpoint.Endpoint
+	UpdateUser endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -83,6 +84,13 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		authenticateAccessTokenEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "authenticateGoogleAccessToken"))(authenticateAccessTokenEndpoint)
 	}
 
+	var updateUserEndpoint endpoint.Endpoint
+	{
+		updateUserEndpoint = UpdateUserEndpoint(svc)
+
+		updateUserEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateUser"))(updateUserEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -92,6 +100,7 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		RegisterOAuth: registerOAuthEndpoint,
 		AuthenticateOAuthRedirect: authenticateOAuthRedirectEndpoint,
 		AuthenticateAccessToken: authenticateAccessTokenEndpoint,
+		UpdateUser: updateUserEndpoint,
 	}
 }
 
@@ -200,6 +209,16 @@ func AuthenticateAccessTokenEndpoint(s userservice.UserService) endpoint.Endpoin
 		jwt, user, err := s.AuthenticateAccessToken(ctx, req.AccessToken, req.TenantIdentifier, req.ProviderName)
 
 		return AuthenticateAccessTokenResponse{jwt, user, err}, err
+	}
+}
+
+func UpdateUserEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UpdateUserRequest)
+
+		user, err := s.UpdateUser(ctx, req.NewUser)
+
+		return UpdateUserResponse{user, err}, err
 	}
 }
 

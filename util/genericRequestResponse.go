@@ -95,7 +95,7 @@ func DecodeHTTPGenericRequest[T any](ctx context.Context,  r *http.Request) (int
 	if ok && !strings.Contains(r.URL.Path, "/usermetadata") {
 		switch r.Method {
 		case "PUT":
-			if !requestScope.IsAllowedToUpdate()  {
+			if !requestScope.IsAllowedToUpdate() && !strings.Contains(r.URL.Path, "/user") {
 				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 			}
 		case "POST":

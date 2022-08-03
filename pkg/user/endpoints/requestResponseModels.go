@@ -120,3 +120,14 @@ type AuthenticateAccessTokenResponse struct {
 
 func (a *AuthenticateAccessTokenResponse) Failed() error { return a.Err }
 
+type UpdateUserRequest struct {
+	NewUser models.UpdateUser `json:"newUser"`
+}
+
+type UpdateUserResponse struct {
+	NewUser models.User `json:"newUser"`
+	Err error `json:"-"`
+}
+
+func (u *UpdateUserResponse) Failed() error { return u.Err }
+

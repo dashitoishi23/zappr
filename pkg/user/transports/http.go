@@ -77,6 +77,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	updateUser := httptransport.NewServer(
+		endpoints.UpdateUser,
+		util.DecodeHTTPGenericRequest[userendpoint.UpdateUserRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -117,6 +124,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Server: authenticateAccessToken,
 		Route: "/oauth/{providerName}/accesstoken/{tenantIdentifier}",
 		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: updateUser,
+		Route: "/user",
+		Methods: []string{"PUT"},
 	})
 
 }
