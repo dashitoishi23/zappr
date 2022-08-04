@@ -492,6 +492,7 @@ func (s *userService) UpdateUser(ctx context.Context, newUser models.UpdateUser)
 	updatedUser.Name = newUser.Name
 	updatedUser.ProfilePictureURL = newUser.ProfilePictureURL
 	updatedUser.TenantIdentifier = newUser.TenantIdentifier
+	*updatedUser.ModifiedOn = time.Now()
 
 	user, err := s.repository.Update(updatedUser)
 
