@@ -20,18 +20,18 @@ type User struct {
 	Role userrolemodels.UserRole `json:"role" gorm:"foreignKey:UserIdentifier"`
 	TenantIdentifier string `json:"tenantIdentifier" validate:"nonzero" `
 	CreatedOn time.Time `json:"createdOn" validate:"nonzero"`
-	ModifiedOn *time.Time `json:"modifiedOn"`
+	ModifiedOn time.Time `json:"modifiedOn"`
 }
 
 func(u *User) InitFields() {
 	u.Identifier = uuid.New().String()
 
 	u.CreatedOn = time.Now()
-	u.ModifiedOn = nil
+	u.ModifiedOn = time.Time{}
 }
 
 func(u *User) UpdateFields(createdOn time.Time){
-	*u.ModifiedOn = time.Now()
+	u.ModifiedOn = time.Now()
 
 	u.CreatedOn = createdOn
 }

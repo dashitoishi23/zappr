@@ -131,3 +131,13 @@ type UpdateUserResponse struct {
 
 func (u *UpdateUserResponse) Failed() error { return u.Err }
 
+type UpdateUserMetadataRequest struct {
+	UpdatedUser models.UpdateUserMetadata `json:"updatedUser"`
+}
+
+type UpdateUserMetadataResponse struct {
+	UpdatedUser models.User `json:"updatedUser"`
+	Err error `json:"-"`
+}
+
+func (u *UpdateUserMetadataResponse) Failed() error { return u.Err }

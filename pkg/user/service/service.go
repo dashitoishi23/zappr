@@ -41,6 +41,7 @@ type UserService interface {
 	AuthenticateAccessToken(ctx context.Context, accessToken string, tenantIdentifier string, 
 		providerName string) (string, models.User, error)
 	UpdateUser(ctx context.Context, newUser models.UpdateUser) (models.User, error)
+	UpdateUserMetadata(ctx context.Context, updatedMetadata models.UpdateUserMetadata) (models.User, error)
 }
 
 type userService struct {
@@ -491,12 +492,33 @@ func (s *userService) UpdateUser(ctx context.Context, newUser models.UpdateUser)
 
 	updatedUser.Name = newUser.Name
 	updatedUser.ProfilePictureURL = newUser.ProfilePictureURL
+	updatedUser.Role = existingUser.Role
 	updatedUser.TenantIdentifier = newUser.TenantIdentifier
-	*updatedUser.ModifiedOn = time.Now()
+	updatedUser.UpdateFields(existingUser.CreatedOn)
 
 	user, err := s.repository.Update(updatedUser)
 
 	return user, err
+}
+
+func (s *userService) UpdateUserMetadata(ctx context.Context, updatedMetadata models.UpdateUserMetadata) (models.User, error) {
+	existingUser, err := s.repository.FindFirst(models.SearchableUser{
+		Identifier: updatedMetadata.Identifier,
+		TenantIdentifier: updatedMetadata.TenantIdentifier,
+	})
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	updatedUser := existingUser
+	updatedUser.Metadata = updatedMetadata.Metadata
+	updatedUser.UpdateFields(existingUser.CreatedOn)
+
+	user, err := s.repository.Update(updatedUser)
+
+	return user, err
+
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 

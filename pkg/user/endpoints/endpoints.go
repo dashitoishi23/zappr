@@ -24,6 +24,7 @@ type Set struct {
 	AuthenticateOAuthRedirect endpoint.Endpoint
 	AuthenticateAccessToken endpoint.Endpoint
 	UpdateUser endpoint.Endpoint
+	UpdateUserMetadata endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -91,6 +92,13 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		updateUserEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updateUser"))(updateUserEndpoint)
 	}
 
+	var updateUserMetadataEndpoint endpoint.Endpoint
+	{
+		updateUserMetadataEndpoint = UpdateUserMetadataEndpoint(svc)
+
+		updateUserMetadataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "updatedUserMetadata"))(updateUserMetadataEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -101,6 +109,7 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		AuthenticateOAuthRedirect: authenticateOAuthRedirectEndpoint,
 		AuthenticateAccessToken: authenticateAccessTokenEndpoint,
 		UpdateUser: updateUserEndpoint,
+		UpdateUserMetadata: updateUserMetadataEndpoint,
 	}
 }
 
@@ -219,6 +228,16 @@ func UpdateUserEndpoint(s userservice.UserService) endpoint.Endpoint {
 		user, err := s.UpdateUser(ctx, req.NewUser)
 
 		return UpdateUserResponse{user, err}, err
+	}
+}
+
+func UpdateUserMetadataEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UpdateUserMetadataRequest)
+
+		user, err := s.UpdateUserMetadata(ctx, req.UpdatedUser)
+
+		return UpdateUserMetadataResponse{user, err}, err
 	}
 }
 
