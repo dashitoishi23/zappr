@@ -13,7 +13,8 @@ type User struct {
 	Name       string `json:"name" validate:"nonzero" `
 	Email      string `json:"email" validate:"nonzero" `
 	Password   string `json:"password" `
-	IsADUser   bool   `json:"isAdUser"`
+	IsExternalOAuthUser   bool   `json:"isExternalOauthUser"`
+	OAuthProvider string `json:"oAuthProvider"`
 	ProfilePictureURL string `json:"profilePictureURL"`
 	Locale     string `json:"locale" validate:"nonzero" `
 	Metadata json.RawMessage `json:"metadata" gorm:"type:jsonb"`

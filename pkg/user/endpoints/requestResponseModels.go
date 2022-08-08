@@ -141,3 +141,14 @@ type UpdateUserMetadataResponse struct {
 }
 
 func (u *UpdateUserMetadataResponse) Failed() error { return u.Err }
+
+type GetUsersRequest struct {
+	UserSearch models.SearchableUser `json:"userSearch"`
+}
+
+type GetUsersResponse struct {
+	Users []models.User `json:"users"`
+	Err error `json:"-"`
+}
+
+func (g *GetUsersResponse) Failed() error { return g.Err }

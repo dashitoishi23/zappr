@@ -42,6 +42,7 @@ type UserService interface {
 		providerName string) (string, models.User, error)
 	UpdateUser(ctx context.Context, newUser models.UpdateUser) (models.User, error)
 	UpdateUserMetadata(ctx context.Context, updatedMetadata models.UpdateUserMetadata) (models.User, error)
+	GetUsers(ctx context.Context, userSearch models.SearchableUser) ([]models.User, error)
 }
 
 type userService struct {
@@ -75,7 +76,7 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 		return newUser, errors.New(constants.INVALID_MODEL)
 	}
 
-	if !newUser.IsADUser {
+	if !newUser.IsExternalOAuthUser {
 		userPwd := []byte(newUser.Password)
 		hashedPassword, err := bcrypt.GenerateFromPassword(userPwd, 10)
 
@@ -85,6 +86,8 @@ func (s *userService) SignupUser(_ context.Context, newUser models.User) (models
 
 		newUser.Password = string(hashedPassword)
 	}
+
+	newUser.OAuthProvider = "email"
 
 	newUser.InitFields()
 
@@ -454,7 +457,8 @@ func (s *userService) AuthenticateAccessToken(ctx context.Context, accessToken s
 
 		newUser := models.User{
 			Email: email,
-			IsADUser: true,
+			IsExternalOAuthUser: true,
+			OAuthProvider: providerName,
 			Metadata: []byte("{}"),
 			Name: clientResp["name"].(string),
 			TenantIdentifier: tenantIdentifier,
@@ -519,6 +523,12 @@ func (s *userService) UpdateUserMetadata(ctx context.Context, updatedMetadata mo
 
 	return user, err
 
+}
+
+func (s *userService) GetUsers(ctx context.Context, userSearch models.SearchableUser) ([]models.User, error) {
+	users, err := s.repository.FindByAssociation("Role", userSearch)
+
+	return users, err
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 

@@ -91,6 +91,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	getUsers := httptransport.NewServer(
+		endpoints.GetUsers,
+		util.DecodeHTTPGenericRequest[userendpoint.GetUsersRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -141,6 +148,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Server: updateUserMetadata,
 		Route: "/user/metadata",
 		Methods: []string{"PUT"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: getUsers,
+		Route: "/user/all",
+		Methods: []string{"POST"},
 	})
 
 }
