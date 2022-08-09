@@ -1,9 +1,5 @@
 # syntax=docker/dockerfile:1
 
-FROM nginx:latest
-
-COPY nginx.conf /etc/nginx/nginx.conf
-
 FROM golang:1.18-bullseye
 
 WORKDIR /app
