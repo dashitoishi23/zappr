@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"dev.azure.com/technovert-vso/Zappr/_git/Zappr/constants"
+	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	usermodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/models"
 	userservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/user/service"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
@@ -26,6 +27,7 @@ type Set struct {
 	UpdateUser endpoint.Endpoint
 	UpdateUserMetadata endpoint.Endpoint
 	GetUsers endpoint.Endpoint
+	GetUsersPaged endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -107,6 +109,12 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		getUsersEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersEndpoint"))(getUsersEndpoint)
 	}
 
+	var getUsersPagedEndpoint endpoint.Endpoint
+	{
+		getUsersPagedEndpoint = GetUsersPagedEndpoint(svc)
+		getUsersPagedEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersPagedEndpoint"))(getUsersPagedEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -119,6 +127,7 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		UpdateUser: updateUserEndpoint,
 		UpdateUserMetadata: updateUserMetadataEndpoint,
 		GetUsers: getUsersEndpoint,
+		GetUsersPaged: getUsersPagedEndpoint,
 	}
 }
 
@@ -257,6 +266,17 @@ func GetUsersEndpoint(s userservice.UserService) endpoint.Endpoint {
 		users, err := s.GetUsers(ctx, req.UserSearch)
 
 		return GetUsersResponse{users, err}, err
+	}
+}
+
+func GetUsersPagedEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(commonmodels.PagedRequest[GetUsersRequest])
+
+		pagedUsers, err := s.GetUsersPaged(ctx, req.Entity.UserSearch, req.Page, req.Size)
+
+		return pagedUsers, err
+
 	}
 }
 

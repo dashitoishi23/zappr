@@ -153,22 +153,12 @@ func(r *repository[T]) GetPaged(currentEntity interface{}, page int, size int) (
 		end = resultOfDBOp
 	}
 
-
-	if tx.Error != nil {
-		return commonmodels.PagedResponse[T]{
-			Items: result,
-			Page: page,
-			Size: size,
-			Pages: 0,
-		}, tx.Error
-	}
-
 	return commonmodels.PagedResponse[T]{
 		Items: result[skip:end],
 		Page: page,
 		Size: size,
 		Pages: int(math.Ceil(float64(len(result))/float64(size))),
-	}, nil	
+	}, tx.Error	
 
 }
 

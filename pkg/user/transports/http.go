@@ -98,6 +98,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	getUsersPaged := httptransport.NewServer(
+		endpoints.GetUsersPaged,
+		util.DecodeHTTPPagedRequest[userendpoint.GetUsersRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -152,6 +159,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		NeedsAuth: true,
 		Server: getUsers,
 		Route: "/user/all",
+		Methods: []string{"POST"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: getUsersPaged,
+		Route: "/user/paged",
 		Methods: []string{"POST"},
 	})
 

@@ -43,6 +43,7 @@ type UserService interface {
 	UpdateUser(ctx context.Context, newUser models.UpdateUser) (models.User, error)
 	UpdateUserMetadata(ctx context.Context, updatedMetadata models.UpdateUserMetadata) (models.User, error)
 	GetUsers(ctx context.Context, userSearch models.SearchableUser) ([]models.User, error)
+	GetUsersPaged(ctx context.Context, userSearch models.SearchableUser, page int, size int) (commonmodels.PagedResponse[models.User], error)
 }
 
 type userService struct {
@@ -526,9 +527,22 @@ func (s *userService) UpdateUserMetadata(ctx context.Context, updatedMetadata mo
 }
 
 func (s *userService) GetUsers(ctx context.Context, userSearch models.SearchableUser) ([]models.User, error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+	userSearch.TenantIdentifier = scope.UserTenant
+
 	users, err := s.repository.FindByAssociation("Role", userSearch)
 
 	return users, err
+}
+
+func (s *userService) GetUsersPaged(ctx context.Context, 
+	userSearch models.SearchableUser, page int, size int) (commonmodels.PagedResponse[models.User], error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+	userSearch.TenantIdentifier = scope.UserTenant
+
+	pagedUsers, err := s.repository.GetPaged(userSearch, page, size)
+
+	return pagedUsers, err
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
