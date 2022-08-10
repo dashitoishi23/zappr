@@ -152,3 +152,14 @@ type GetUsersResponse struct {
 }
 
 func (g *GetUsersResponse) Failed() error { return g.Err }
+
+type GetUsersByMetadataRequest struct {
+	Query map[string]interface{} `json:"query"`
+}
+
+type GetUsersByMetadataResponse struct {
+	Users []models.User `json:"users"`
+	Err error `json:"-"`
+}
+
+func (g *GetUsersByMetadataResponse) Failed() error { return g.Err }

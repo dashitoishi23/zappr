@@ -28,6 +28,8 @@ type Set struct {
 	UpdateUserMetadata endpoint.Endpoint
 	GetUsers endpoint.Endpoint
 	GetUsersPaged endpoint.Endpoint
+	GetUsersByMetadata endpoint.Endpoint
+	GetUsersByMetadataPaged endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -115,6 +117,20 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		getUsersPagedEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersPagedEndpoint"))(getUsersPagedEndpoint)
 	}
 
+	var getUsersByMetadataEndpoint endpoint.Endpoint
+	{
+		getUsersByMetadataEndpoint = GetUsersByMetadataEndpoint(svc)
+
+		getUsersByMetadataEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersByMetadata"))(getUsersByMetadataEndpoint)
+	}
+
+	var getUsersByMetadataPagedEndpoint endpoint.Endpoint
+	{
+		getUsersByMetadataPagedEndpoint = GetUsersByMetadataPagedEndpoint(svc)
+
+		getUsersByMetadataPagedEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersByMetadataPaged"))(getUsersByMetadataPagedEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -128,6 +144,8 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		UpdateUserMetadata: updateUserMetadataEndpoint,
 		GetUsers: getUsersEndpoint,
 		GetUsersPaged: getUsersPagedEndpoint,
+		GetUsersByMetadata: getUsersByMetadataEndpoint,
+		GetUsersByMetadataPaged: getUsersByMetadataPagedEndpoint,
 	}
 }
 
@@ -277,6 +295,26 @@ func GetUsersPagedEndpoint(s userservice.UserService) endpoint.Endpoint {
 
 		return pagedUsers, err
 
+	}
+}
+
+func GetUsersByMetadataEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(GetUsersByMetadataRequest)
+
+		users, err := s.GetUsersByMetadata(ctx, req.Query)
+
+		return GetUsersByMetadataResponse{users, err}, err
+	}
+}
+
+func GetUsersByMetadataPagedEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(commonmodels.PagedRequest[GetUsersByMetadataRequest])
+
+		users, err := s.GetUsersByMetadataPaged(ctx, req.Entity.Query, req.Page, req.Size)
+
+		return users, err
 	}
 }
 

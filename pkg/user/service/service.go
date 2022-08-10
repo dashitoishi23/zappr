@@ -44,6 +44,8 @@ type UserService interface {
 	UpdateUserMetadata(ctx context.Context, updatedMetadata models.UpdateUserMetadata) (models.User, error)
 	GetUsers(ctx context.Context, userSearch models.SearchableUser) ([]models.User, error)
 	GetUsersPaged(ctx context.Context, userSearch models.SearchableUser, page int, size int) (commonmodels.PagedResponse[models.User], error)
+	GetUsersByMetadata(ctx context.Context, query map[string]interface{}) ([]models.User, error)
+	GetUsersByMetadataPaged(ctx context.Context, query map[string]interface{}, page int, size int) (commonmodels.PagedResponse[models.User], error)
 }
 
 type userService struct {
@@ -545,6 +547,39 @@ func (s *userService) GetUsersPaged(ctx context.Context,
 	return pagedUsers, err
 }
 
+func (s *userService) GetUsersByMetadata(ctx context.Context, query map[string]interface{}) ([]models.User, error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	queryString, queryErr := constructJSONBQuery(query, scope.UserTenant)
+
+	if queryErr != nil {
+		return []models.User{}, queryErr
+	}
+
+	queryString = "Select * from \"User\" where \"Metadata\" @> '" + queryString 
+
+	users, err := s.repository.QueryRawSql(queryString)
+
+	return users, err
+}
+
+func (s *userService) GetUsersByMetadataPaged(ctx context.Context, query map[string]interface{}, 
+	page int, size int) (commonmodels.PagedResponse[models.User], error) {
+		scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+		queryString, queryErr := constructJSONBQuery(query, scope.UserTenant)
+
+		if queryErr != nil {
+			return commonmodels.PagedResponse[models.User]{}, queryErr
+		}
+
+		queryString = "Select * from \"User\" where \"Metadata\" @> '" + queryString 
+
+		users, err := s.repository.QueryRawSqlPaged(queryString, page, size)
+
+		return users, err
+	}
+
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
 	userIdentifier string, userScopes pq.StringArray) (string, error) {
 	if userEmail == "" {
@@ -605,6 +640,16 @@ func (s *userService) getProfilePicture(providerName string, clientResp map[stri
 	}
 
 	return ""
+}
+
+func constructJSONBQuery(query map[string]interface{}, tenantIdentifier string) (string, error) {
+	jsonQuery, jsonErr := json.Marshal(query)
+
+		if jsonErr != nil {
+			return "", jsonErr
+		}
+
+		return string(jsonQuery) + "' and \"TenantIdentifier\" = '" + tenantIdentifier  + "' ", nil
 }
 
 
