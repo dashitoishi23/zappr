@@ -7,7 +7,8 @@ type SearchableUser struct {
 	Name             string     `json:"name"`
 	Email            string     `json:"email"`
 	Password         string     `json:"password"`
-	IsADUser         bool       `json:"isAdUser"`
+	IsExternalOAuthUser         bool       `json:"isExternalOAuthUser"`
+	OAuthProvider    string 	`json:"oAuthProvider"`
 	Locale           string     `json:"locale"`
 	TenantIdentifier string     `json:"tenantIdentifier"`
 	CreatedOn        time.Time  `json:"createdOn"`
