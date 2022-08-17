@@ -163,3 +163,25 @@ type GetUsersByMetadataResponse struct {
 }
 
 func (g *GetUsersByMetadataResponse) Failed() error { return g.Err }
+
+type UpdateCurrentUserRequest struct {
+	NewUser models.UpdateCurrentUser `json:"newUser"`
+}
+
+type UpdateCurrentUserResponse struct {
+	UpdatedUser models.User `json:"updatedUser"`
+	Err error `json:"-"`
+}
+
+func (u *UpdateCurrentUserResponse) Failed() error { return u.Err }
+
+type GetCurrentUserDetailsRequest struct {
+
+}
+
+type GetCurrentUserDetailsResponse struct {
+	User models.User `json:"user"`
+	Err error `json:"-"`
+}
+
+func (g *GetCurrentUserDetailsResponse) Failed() error {return g.Err}

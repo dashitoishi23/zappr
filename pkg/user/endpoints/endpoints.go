@@ -30,6 +30,8 @@ type Set struct {
 	GetUsersPaged endpoint.Endpoint
 	GetUsersByMetadata endpoint.Endpoint
 	GetUsersByMetadataPaged endpoint.Endpoint
+	GetCurrentUserDetails endpoint.Endpoint
+	UpdateCurrentUser endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -131,6 +133,22 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		getUsersByMetadataPagedEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "getUsersByMetadataPaged"))(getUsersByMetadataPagedEndpoint)
 	}
 
+	var getCurrentUserDetailsEndpoint endpoint.Endpoint
+	{
+		getCurrentUserDetailsEndpoint = GetUserCurrentDetailsEndpoint(svc)
+
+		getCurrentUserDetailsEndpoint = util.
+		TransportLoggingMiddleware(log.With(logger, "method", "getCurrentUserDetails"))(getCurrentUserDetailsEndpoint)
+	}
+
+	var updateCurrentUserEndpoint endpoint.Endpoint
+	{
+		updateCurrentUserEndpoint = UpdateCurrentUserEndpoint(svc)
+
+		updateCurrentUserEndpoint = util.
+		TransportLoggingMiddleware(log.With(logger, "method", "updateCurrentUser"))(updateCurrentUserEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -146,6 +164,8 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		GetUsersPaged: getUsersPagedEndpoint,
 		GetUsersByMetadata: getUsersByMetadataEndpoint,
 		GetUsersByMetadataPaged: getUsersByMetadataPagedEndpoint,
+		GetCurrentUserDetails: getCurrentUserDetailsEndpoint,
+		UpdateCurrentUser: updateCurrentUserEndpoint,
 	}
 }
 
@@ -315,6 +335,24 @@ func GetUsersByMetadataPagedEndpoint(s userservice.UserService) endpoint.Endpoin
 		users, err := s.GetUsersByMetadataPaged(ctx, req.Entity.Query, req.Page, req.Size)
 
 		return users, err
+	}
+}
+
+func GetUserCurrentDetailsEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		user, err := s.GetCurrentUserDetails(ctx)
+
+		return user, err
+	}
+}
+
+func UpdateCurrentUserEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(UpdateCurrentUserRequest)
+
+		user, err := s.UpdateCurrentUser(ctx, req.NewUser)
+
+		return UpdateCurrentUserResponse{user, err}, err
 	}
 }
 

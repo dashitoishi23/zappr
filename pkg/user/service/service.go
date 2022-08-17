@@ -46,6 +46,8 @@ type UserService interface {
 	GetUsersPaged(ctx context.Context, userSearch models.SearchableUser, page int, size int) (commonmodels.PagedResponse[models.User], error)
 	GetUsersByMetadata(ctx context.Context, query map[string]interface{}) ([]models.User, error)
 	GetUsersByMetadataPaged(ctx context.Context, query map[string]interface{}, page int, size int) (commonmodels.PagedResponse[models.User], error)
+	GetCurrentUserDetails(ctx context.Context) (models.User, error)
+	UpdateCurrentUser(ctx context.Context, newUser models.UpdateCurrentUser) (models.User, error) 
 }
 
 type userService struct {
@@ -579,6 +581,41 @@ func (s *userService) GetUsersByMetadataPaged(ctx context.Context, query map[str
 
 		return users, err
 	}
+
+func  (s *userService) GetCurrentUserDetails(ctx context.Context) (models.User, error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	user, err := s.repository.FindFirstByAssociation("Role", &models.SearchableUser{
+		Identifier: scope.UserIdentifier,
+		TenantIdentifier: scope.UserTenant,
+	})
+
+	return user, err
+}
+
+func (s *userService) UpdateCurrentUser(ctx context.Context, newUser models.UpdateCurrentUser) (models.User, error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
+		Identifier: scope.UserIdentifier,
+		TenantIdentifier: scope.UserTenant,
+	})
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	updatedUser := existingUser
+
+	updatedUser.Name = newUser.Name
+	updatedUser.Metadata = newUser.Metadata
+	updatedUser.Email = newUser.Email
+	updatedUser.ProfilePictureURL = newUser.ProfilePictureURL
+
+	user, err := s.repository.Update(updatedUser)
+
+	return user, err
+}
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 
 	userIdentifier string, userScopes pq.StringArray) (string, error) {
