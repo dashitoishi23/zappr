@@ -3,10 +3,8 @@ package usermodels
 import "encoding/json"
 
 type UpdateCurrentUser struct {
-	Identifier 		  string 		`json:"identifier"`
-	Name              string          `json:"name"`
-	ProfilePictureURL string          `json:"profilePictureUrl"`
-	Metadata          json.RawMessage `json:"metadata"`
-	Email      string `json:"email"`
-	TenantIdentifier string `json:"tenantIdentifier"`
+	Name              string          `json:"name" validate:"nonzero"`
+	ProfilePictureURL string          `json:"profilePictureUrl" validate:"nonzero"`
+	Metadata          json.RawMessage `json:"metadata" validate:"nonzero"`
+	Email      string `json:"email" validate:"nonzero"`
 }

@@ -594,6 +594,10 @@ func  (s *userService) GetCurrentUserDetails(ctx context.Context) (models.User, 
 }
 
 func (s *userService) UpdateCurrentUser(ctx context.Context, newUser models.UpdateCurrentUser) (models.User, error) {
+	if errs := validator.Validate(newUser); errs != nil {
+	return models.User{}, errors.New(constants.INVALID_MODEL)
+	}
+
 	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
 
 	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
