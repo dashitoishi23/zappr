@@ -133,6 +133,13 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		serverOptions...
 	)
 
+	changePassword := httptransport.NewServer(
+		endpoints.ChangePassword,
+		util.DecodeHTTPGenericRequest[userendpoint.ChangePasswordRequest],
+		util.EncodeHTTPGenericResponse,
+		serverOptions...
+	)
+
 	return append(userServers, commonmodels.HttpServerConfig{
 		NeedsAuth: false,
 		Server: loginHandler,
@@ -146,7 +153,7 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: updateUserRoleHandler,
-		Route:"/user/role",
+		Route:"/admin/role",
 		Methods: []string{"PUT"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
@@ -186,22 +193,22 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getUsers,
-		Route: "/user/all",
+		Route: "/admin/all",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getUsersPaged,
-		Route: "/user/paged",
+		Route: "/admin/paged",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getUsersByMetadata,
-		Route: "/user/all/metadata",
+		Route: "/admin/all/metadata",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
 		Server: getUsersByMetadataPaged,
-		Route: "/user/all/metadata/paged",
+		Route: "/admin/all/metadata/paged",
 		Methods: []string{"POST"},
 	}, commonmodels.HttpServerConfig{
 		NeedsAuth: true,
@@ -213,6 +220,11 @@ func NewHttpHandler(endpoints userendpoint.Set) []commonmodels.HttpServerConfig 
 		Server: updateCurrentUser,
 		Route: "/user/current",
 		Methods: []string{"PUT"},
+	}, commonmodels.HttpServerConfig{
+		NeedsAuth: true,
+		Server: changePassword,
+		Route: "/user/changepassword",
+		Methods: []string{"POST"},
 	})
 
 }

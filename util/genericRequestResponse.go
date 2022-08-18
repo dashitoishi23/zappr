@@ -99,11 +99,11 @@ func DecodeHTTPGenericRequest[T any](ctx context.Context,  r *http.Request) (int
 				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 			}
 		case "POST":
-			if !requestScope.IsAllowedToWrite() {
+			if !requestScope.IsAllowedToWrite() && !strings.Contains(r.URL.Path, "/user") {
 				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 			}
 		case "DELETE":
-			if !requestScope.IsAllowedToDelete() {
+			if !requestScope.IsAllowedToDelete() && !strings.Contains(r.URL.Path, "/user") {
 				return nil, errors.New(constants.UNAUTHORIZED_ATTEMPT)
 			}
 		}

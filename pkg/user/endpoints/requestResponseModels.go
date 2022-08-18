@@ -185,3 +185,15 @@ type GetCurrentUserDetailsResponse struct {
 }
 
 func (g *GetCurrentUserDetailsResponse) Failed() error {return g.Err}
+
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
+}
+
+type ChangePasswordResponse struct {
+	IsPasswordChanged bool `json:"isPasswordChanged"`
+	Err error `json:"-"`
+}
+
+func (c *ChangePasswordResponse) Failed() error { return c.Err }

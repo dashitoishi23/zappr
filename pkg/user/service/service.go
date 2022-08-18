@@ -47,7 +47,8 @@ type UserService interface {
 	GetUsersByMetadata(ctx context.Context, query map[string]interface{}) ([]models.User, error)
 	GetUsersByMetadataPaged(ctx context.Context, query map[string]interface{}, page int, size int) (commonmodels.PagedResponse[models.User], error)
 	GetCurrentUserDetails(ctx context.Context) (models.User, error)
-	UpdateCurrentUser(ctx context.Context, newUser models.UpdateCurrentUser) (models.User, error) 
+	UpdateCurrentUser(ctx context.Context, newUser models.UpdateCurrentUser) (models.User, error)
+	ChangePassword(ctx context.Context, newPassword string, oldPassword string) (bool, error) 
 }
 
 type userService struct {
@@ -619,6 +620,45 @@ func (s *userService) UpdateCurrentUser(ctx context.Context, newUser models.Upda
 	user, err := s.repository.Update(updatedUser)
 
 	return user, err
+}
+
+func (s *userService) ChangePassword(ctx context.Context, newPassword string, oldPassword string) (bool, error) {
+	scope := ctx.Value("requestScope").(commonmodels.RequestScope)
+
+	existingUser, err := s.repository.FindFirst(&models.SearchableUser{
+		Identifier: scope.UserIdentifier,
+		TenantIdentifier: scope.UserTenant,
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	hashErr := bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(oldPassword))
+
+	if hashErr != nil {
+		return false, errors.New(constants.PASSWORDS_DONT_MATCH)
+	}
+
+	newUser := existingUser
+
+	userPwd := []byte(newPassword)
+	hashedPassword, err := bcrypt.GenerateFromPassword(userPwd, 10)
+
+	if err != nil {
+		return false, err
+	}
+
+	newUser.Password = string(hashedPassword)
+
+	_, err = s.repository.Update(newUser)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+
 }
 
 func (s *userService) generateJWTToken(_ context.Context, userEmail string, tenantIdentifier string, 

@@ -32,6 +32,7 @@ type Set struct {
 	GetUsersByMetadataPaged endpoint.Endpoint
 	GetCurrentUserDetails endpoint.Endpoint
 	UpdateCurrentUser endpoint.Endpoint
+	ChangePassword endpoint.Endpoint
 } //defines all endpoints as having type Endpoint, provided by go-kit
 
 func New(svc userservice.UserService, logger log.Logger) Set {
@@ -149,6 +150,13 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		TransportLoggingMiddleware(log.With(logger, "method", "updateCurrentUser"))(updateCurrentUserEndpoint)
 	}
 
+	var changePasswordEndpoint endpoint.Endpoint
+	{
+		changePasswordEndpoint = ChangePasswordEndpoint(svc)
+
+		changePasswordEndpoint = util.TransportLoggingMiddleware(log.With(logger, "method", "changePassword"))(changePasswordEndpoint)
+	}
+
 	return Set{
 		ValidateLogin: validateLoginEndpoint,
 		SignupUser: signupUserEndpoint,
@@ -166,6 +174,7 @@ func New(svc userservice.UserService, logger log.Logger) Set {
 		GetUsersByMetadataPaged: getUsersByMetadataPagedEndpoint,
 		GetCurrentUserDetails: getCurrentUserDetailsEndpoint,
 		UpdateCurrentUser: updateCurrentUserEndpoint,
+		ChangePassword: changePasswordEndpoint,
 	}
 }
 
@@ -353,6 +362,16 @@ func UpdateCurrentUserEndpoint(s userservice.UserService) endpoint.Endpoint {
 		user, err := s.UpdateCurrentUser(ctx, req.NewUser)
 
 		return UpdateCurrentUserResponse{user, err}, err
+	}
+}
+
+func ChangePasswordEndpoint(s userservice.UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(ChangePasswordRequest)
+
+		isPasswordChanged, err := s.ChangePassword(ctx, req.NewPassword, req.OldPassword)
+
+		return ChangePasswordResponse{isPasswordChanged, err}, err
 	}
 }
 
