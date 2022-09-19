@@ -1,4 +1,4 @@
-package azurestorage
+package azurestorageservice
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"os"
 
-	azblob "github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/Azure/azure-storage-blob-go/azblob"
 )
 
 type AzureStorageService interface {
-	CreateAzureStorageContainer(ctx context.Context, containerName string) (bool, error)
+	CreateAzureStorageContainer(ctx context.Context, containerName string, isPubliclyAccessible bool) (bool, error)
 	DeleteAzureStorageContainer(ctx context.Context, containerName string) (bool, error)
 }
 
@@ -40,10 +40,36 @@ func NewAzureStorageService() (AzureStorageService, error) {
 	}, nil
 }
 
-func (a *azureStorageService) CreateAzureStorageContainer(ctx context.Context, containerName string) (bool, error) {
+func (a *azureStorageService) CreateAzureStorageContainer(ctx context.Context, containerName string, 
+	isPubliclyAccessible bool) (bool, error) {
+	containerURL := a.ServiceURL.NewContainerURL(containerName)
+
+	var publicAccessType azblob.PublicAccessType
+
+	if isPubliclyAccessible {
+		publicAccessType = azblob.PublicAccessContainer
+	} else {
+		publicAccessType = azblob.PublicAccessNone
+	}
+
+
+	_, err := containerURL.Create(ctx, azblob.Metadata{}, publicAccessType)
+
+	if err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
-func (a *azureStorageService) DeleteAzureStorageContainer(ctx context.Context, containerName string) (bool, error) {
+func (a *azureStorageService) DeleteAzureStorageContainer(ctx context.Context, containerName string) (bool, error) {	
+	containerURL := a.ServiceURL.NewContainerURL(containerName)
+
+	_, err := containerURL.Delete(ctx, azblob.ContainerAccessConditions{})
+
+	if err != nil {
+		return false, err
+
+	}
 	return true, nil
 }
