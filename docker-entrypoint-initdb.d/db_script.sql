@@ -46,6 +46,18 @@ WITH (
     OIDS = FALSE
 );
 
+CREATE TABLE IF NOT EXISTS public."OAuthProvider"
+(
+    "Name" character varying COLLATE pg_catalog."default" NOT NULL,
+    "Identifier" character varying COLLATE pg_catalog."default" NOT NULL,
+    "Metadata" jsonb NOT NULL,
+    "TenantIdentifier" character varying COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT "OAuthProviderIdentifier" PRIMARY KEY ("Identifier")
+)
+WITH (
+    OIDS = FALSE
+);
+
 CREATE TABLE IF NOT EXISTS public."Role"
 (
     "Identifier" character varying COLLATE pg_catalog."default" NOT NULL,
@@ -84,6 +96,7 @@ CREATE TABLE IF NOT EXISTS public."StaticStorage"
     "TenantIdentifier" character varying COLLATE pg_catalog."default" NOT NULL,
     "CreatedOn" date NOT NULL,
     "ModifiedOn" date,
+    "ProviderName" character varying COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT "StaticStorageIdentifier" PRIMARY KEY ("Identifier")
 )
 WITH (
@@ -109,13 +122,15 @@ CREATE TABLE IF NOT EXISTS public."User"
     "Email" character varying COLLATE pg_catalog."default" NOT NULL,
     "Password" character varying COLLATE pg_catalog."default",
     "Name" character varying COLLATE pg_catalog."default" NOT NULL,
-    "IsADUser" boolean NOT NULL DEFAULT false,
+    "IsExternalOAuthUser" boolean NOT NULL DEFAULT false,
     "Locale" character varying COLLATE pg_catalog."default" NOT NULL,
     "TenantIdentifier" character varying COLLATE pg_catalog."default" NOT NULL,
     "CreatedOn" date NOT NULL,
     "ModifiedOn" date,
     "DeletedAt" date,
     "Metadata" jsonb,
+    "ProfilePictureURL" character varying COLLATE pg_catalog."default",
+    "OAuthProvider" character varying COLLATE pg_catalog."default",
     CONSTRAINT "UserIdentifier" PRIMARY KEY ("Identifier")
 )
 WITH (
@@ -203,6 +218,14 @@ ALTER TABLE IF EXISTS public."ExternalConnectorExecution"
     REFERENCES public."ExternalConnector" ("Identifier") MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public."OAuthProvider"
+    ADD CONSTRAINT "OAuthProviderTenantIdentifier" FOREIGN KEY ("TenantIdentifier")
+    REFERENCES public."Tenant" ("Identifier") MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION
+    NOT VALID;
 
 
 ALTER TABLE IF EXISTS public."Role"
