@@ -12,10 +12,10 @@ COPY . ./
 
 COPY ./Caddyfile ./Caddyfile
 
-ENV ZAPPR_POSTGRES_USER zappr_pg_local@zappr-local
-ENV ZAPPR_POSTGRES_PASSWORD Passw0rdtechnovert
+ENV ZAPPR_POSTGRES_USER postgres
+ENV ZAPPR_POSTGRES_PASSWORD postgres
 ENV ZAPPR_POSTGRES_DB zappr
-ENV ZAPPR_POSTGRES_HOST zappr-local.postgres.database.azure.com
+ENV ZAPPR_POSTGRES_HOST 0.0.0.0:5432
 
 RUN go mod download 
 

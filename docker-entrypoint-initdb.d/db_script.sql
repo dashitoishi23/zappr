@@ -2,6 +2,9 @@
 -- Please log an issue at https://redmine.postgresql.org/projects/pgadmin4/issues/new if you find any bugs, including reproduction steps.
 BEGIN;
 
+SELECT 'CREATE DATABASE zapprdb'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'zapprdb')\gexec
+
 
 CREATE TABLE IF NOT EXISTS public."APIKey"
 (

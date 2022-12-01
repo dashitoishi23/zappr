@@ -16,9 +16,9 @@ func OpenDBConnection() (*gorm.DB, error) {
 	database := os.Getenv("ZAPPR_POSTGRES_DB")
 	host := os.Getenv("ZAPPR_POSTGRES_HOST")
 
-	print(password)
-
 	dsn := dsnBuilder(user, password, database, host, 5432)
+
+	fmt.Print(dsn)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		SkipDefaultTransaction: true,
@@ -29,7 +29,6 @@ func OpenDBConnection() (*gorm.DB, error) {
 	})
 
 	if err != nil {
-		fmt.Print(err.Error())
 		return db, err
 	}
 
@@ -37,5 +36,5 @@ func OpenDBConnection() (*gorm.DB, error) {
 }
 
 func dsnBuilder(user string, password string, dbName string, host string, port int) string {
-	return fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=require", host, strconv.Itoa(port), dbName, user, password)
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, strconv.Itoa(port), dbName, user, password)
 }

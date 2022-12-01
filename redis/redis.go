@@ -1,7 +1,6 @@
 package redisutil
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gomodule/redigo/redis"
@@ -29,8 +28,6 @@ func(r *RedisPool) NewPool()  {
 			}
 
 			redisPwd := os.Getenv("REDIS_PASSWORD")
-
-			fmt.Print(redisPwd)
 
 			if redisPwd != "" {
 				_, authErr := c.Do("AUTH", redisPwd)

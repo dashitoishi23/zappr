@@ -14,9 +14,8 @@ services:
       - caddy_config:/config
     networks:
       - zappr
-  db:
+  database:
     image: postgres:14.1-alpine
-    restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -24,7 +23,15 @@ services:
       - "5432:5432"
     volumes:
       - db:/var/lib/postgresql/data
-
+      - ./docker-entrypoint-initdb.d/db_script.sql:/docker-entrypoint-initdb.d/db_script.sql
+    networks:
+      - zappr
+  redis:
+    image: "bitnami/redis:latest"
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
   zappr:
     container_name: zappr
     build:
@@ -39,17 +46,10 @@ services:
       - JWT_SIGNING_KEY
     depends_on:
       - redis
+      - database
     links:
       - redis
-    networks:
-      - zappr
-
-  redis:
-    image: "bitnami/redis:latest"
-    ports:
-      - "6379:6379"
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+      - database
     networks:
       - zappr
 
@@ -59,3 +59,4 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  db:

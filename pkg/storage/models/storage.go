@@ -9,3 +9,4 @@ type StaticStorage struct {
 	CreatedOn        time.Time `json:"createdOn"`
 	ModifiedOn time.Time `json:"modifiedOn"`
 }
+
