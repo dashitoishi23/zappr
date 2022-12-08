@@ -12,13 +12,8 @@ COPY . ./
 
 COPY ./Caddyfile ./Caddyfile
 
-ENV ZAPPR_POSTGRES_USER postgres
-ENV ZAPPR_POSTGRES_PASSWORD postgres
-ENV ZAPPR_POSTGRES_DB zappr
-ENV ZAPPR_POSTGRES_HOST 0.0.0.0:5432
-
 RUN go mod download 
 
 RUN go build -o ./
 
-CMD ["./Zappr"]
+# CMD bash -c 'while !</dev/tcp/database/5432; do sleep 1; done; ./Zappr'

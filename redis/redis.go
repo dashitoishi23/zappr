@@ -1,6 +1,7 @@
 package redisutil
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/gomodule/redigo/redis"
@@ -36,6 +37,8 @@ func(r *RedisPool) NewPool()  {
 				panic(authErr)
 			}
 			}
+
+			fmt.Print("Redis instance connected!")
 
 			return c, err
 

@@ -12,28 +12,30 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-    networks:
-      - zappr
   database:
     image: postgres:14.1-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+    hostname: postgres
     ports:
       - "5432:5432"
     volumes:
       - db:/var/lib/postgresql/data
-      - ./docker-entrypoint-initdb.d/db_script.sql:/docker-entrypoint-initdb.d/db_script.sql
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
     networks:
       - zappr
   redis:
     image: "bitnami/redis:latest"
+    hostname: redis
     ports:
       - "6379:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - zappr
   zappr:
     container_name: zappr
+    restart: on-failure
     build:
       context: .
     ports:
@@ -47,9 +49,7 @@ services:
     depends_on:
       - redis
       - database
-    links:
-      - redis
-      - database
+    command: bash -c 'while !</dev/tcp/database/5432; do sleep 1; done; ./Zappr'
     networks:
       - zappr
 

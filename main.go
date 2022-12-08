@@ -69,6 +69,7 @@ func main() {
 	var servers []commonmodels.HttpServerConfig
 
 	if dbErr == nil {
+		fmt.Print("Database connected!")
 		fmt.Print(db.Statement.Vars...)
 		var (
 			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
