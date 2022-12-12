@@ -12,6 +12,10 @@ import (
 
 	commonmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/models"
 	database "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/database"
+	initsetupendpoints "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/initsetup/endpoints"
+	initsetupmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/initsetup/models"
+	initsetupservice "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/initsetup/service"
+	initsetuptransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/initsetup/transports"
 	masterroleendpoint "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/endpoints"
 	masterrolemodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/models"
 	masterroletransports "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/role/transports"
@@ -56,7 +60,8 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	db, dbErr := database.OpenDBConnection()
+	//Initialise Zappr Config DB
+	db, dbErr := database.OpenZapprConfigDBConnection()
 
 	redisPool := &redisutil.RedisPool{}
 
@@ -71,6 +76,16 @@ func main() {
 	if dbErr == nil {
 		fmt.Print("Database connected!")
 		fmt.Print(db.Statement.Vars...)
+
+		var (
+			initRepository = repository.Repository[initsetupmodels.DBConfig](db)
+			initsetupService = initsetupservice.NewInitSetupService(initRepository)
+			initSetupEndpoints = initsetupendpoints.New(initsetupService, logger)
+			initSetupServers = initsetuptransports.NewHttpHandler(initSetupEndpoints)
+		)
+
+		servers = append(servers, initSetupServers...)
+
 		var (
 			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
 			repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db), 
@@ -79,7 +94,7 @@ func main() {
 
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
-	)
+		)
 
 		servers = append(servers, userServers...)
 

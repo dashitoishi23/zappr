@@ -11,13 +11,14 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func OpenDBConnection() (*gorm.DB, error) {
+func OpenZapprConfigDBConnection() (*gorm.DB, error) {
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
 	database := os.Getenv("ZAPPR_POSTGRES_DB")
 	host := os.Getenv("ZAPPR_POSTGRES_HOST")
+	sslMode := os.Getenv("POSTGRES_SSL_MODE")
 
-	dsn := dsnBuilder(user, password, "postgres", host, 5432)
+	dsn := dsnBuilder(user, password, "postgres", host, 5432, sslMode)
 
 	fmt.Print(dsn)
 
@@ -47,7 +48,7 @@ func OpenDBConnection() (*gorm.DB, error) {
 
 	dbVar.Close()
 
-	dsn = dsnBuilder(user, password, database, host, 5432)
+	dsn = dsnBuilder(user, password, database, host, 5432, sslMode)
 
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		SkipDefaultTransaction: true,
@@ -61,7 +62,7 @@ func OpenDBConnection() (*gorm.DB, error) {
 		return db, err
 	}
 
-	err = executeRawSQL(db, "db_script.sql")
+	err = executeRawSQL(db, "db_create_zapprdb.sql")
 
 	if err != nil {
 		return db, err
@@ -70,8 +71,8 @@ func OpenDBConnection() (*gorm.DB, error) {
 	return db, nil
 }
 
-func dsnBuilder(user string, password string, dbName string, host string, port int) string {
-	return fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=disable", host, strconv.Itoa(port), dbName, user, password)
+func dsnBuilder(user string, password string, dbName string, host string, port int, sslMode string) string {
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s", host, strconv.Itoa(port), dbName, user, password, sslMode)
 }
 
 func executeRawSQL(db *gorm.DB, filename string) error {

@@ -1,3 +1,3 @@
 #! /bin/sh
 
-docker-compose 
+docker-compose

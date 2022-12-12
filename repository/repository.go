@@ -12,6 +12,7 @@ import (
 )
 
 type IRepository[T any] interface {
+	AddRange(T []T) *gorm.DB
 	Add(T T) *gorm.DB
 	GetAll() ([]T, error)
 	GetAllByAssociation(associationName string) ([]T, error)
@@ -42,6 +43,22 @@ func Repository[T any](database *gorm.DB) IRepository[T]{
 func(r *repository[T]) Add(newEntity T) *gorm.DB{
 	tx := r.db.Create(&newEntity)
 	fmt.Print(tx.RowsAffected)
+	return tx
+}
+
+func(r *repository[T]) AddRange(newEntity []T) *gorm.DB{
+	r.db.Begin()
+
+	for i:=0; i<len(newEntity); i++ {
+		tx:= r.db.Create(newEntity[i])
+
+		if tx.Error != nil {
+			return tx
+		}
+	}
+
+	tx := r.db.Commit()
+
 	return tx
 }
 
