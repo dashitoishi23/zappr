@@ -7,6 +7,7 @@ import (
 	initsetupmodels "dev.azure.com/technovert-vso/Zappr/_git/Zappr/pkg/initsetup/models"
 	repository "dev.azure.com/technovert-vso/Zappr/_git/Zappr/repository"
 	util "dev.azure.com/technovert-vso/Zappr/_git/Zappr/util"
+	"github.com/gomodule/redigo/redis"
 )
 
 type InitSetupService interface {
@@ -16,11 +17,13 @@ type InitSetupService interface {
 
 type initSetupService struct {
 	repository repository.IRepository[initsetupmodels.DBConfig]
+	redisConnection redis.Conn
 }
 
-func NewInitSetupService(repository repository.IRepository[initsetupmodels.DBConfig]) InitSetupService {
+func NewInitSetupService(repository repository.IRepository[initsetupmodels.DBConfig], redisConnection redis.Conn) InitSetupService {
 	return &initSetupService{
 		repository: repository,
+		redisConnection: redisConnection,
 	}
 }
 
@@ -34,6 +37,10 @@ func (i *initSetupService) AddConfig(newConfig initsetupmodels.Config) (initsetu
 
 	dbConfig.InitFields()
 	tx := i.repository.Add(dbConfig)
+
+	if tx.Error == nil {
+		i.redisConnection.Do("SET", "ZapprConfig", dbConfig)
+	}
 
 	return newConfig, tx.Error
 

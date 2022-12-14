@@ -79,7 +79,7 @@ func main() {
 
 		var (
 			initRepository = repository.Repository[initsetupmodels.DBConfig](db)
-			initsetupService = initsetupservice.NewInitSetupService(initRepository)
+			initsetupService = initsetupservice.NewInitSetupService(initRepository, client)
 			initSetupEndpoints = initsetupendpoints.New(initsetupService, logger)
 			initSetupServers = initsetuptransports.NewHttpHandler(initSetupEndpoints)
 		)
