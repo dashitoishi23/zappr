@@ -60,7 +60,7 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	//Initialise Zappr Config DB
+	//Initialise Zappr Config userDB
 	db, dbErr := database.OpenZapprConfigDBConnection()
 
 	redisPool := &redisutil.RedisPool{}
@@ -79,18 +79,22 @@ func main() {
 
 		var (
 			initRepository = repository.Repository[initsetupmodels.DBConfig](db)
-			initsetupService = initsetupservice.NewInitSetupService(initRepository, client)
+			initsetupService = initsetupservice.NewInitSetupService(initRepository)
 			initSetupEndpoints = initsetupendpoints.New(initsetupService, logger)
 			initSetupServers = initsetuptransports.NewHttpHandler(initSetupEndpoints)
 		)
 
 		servers = append(servers, initSetupServers...)
 
+		userDB, err := database.OpenDBConnection(initRepository)
+
+		if err == nil {
+
 		var (
-			userService = userservice.NewUserService(repository.Repository[usermodels.User](db), 
-			repository.Repository[masterrolemodels.Role](db), repository.Repository[userrolemodels.UserRole](db), 
-			repository.Repository[tenantmodels.Tenant](db), repository.Repository[usermodels.APIKey](db), 
-			repository.Repository[usermodels.OAuthProvider](db))
+			userService = userservice.NewUserService(repository.Repository[usermodels.User](userDB), 
+			repository.Repository[masterrolemodels.Role](userDB), repository.Repository[userrolemodels.UserRole](userDB), 
+			repository.Repository[tenantmodels.Tenant](userDB), repository.Repository[usermodels.APIKey](userDB), 
+			repository.Repository[usermodels.OAuthProvider](userDB))
 
 			userEndpoint = userendpoint.New(userService, logger)
 			userServers = usertransport.NewHttpHandler(userEndpoint)
@@ -99,9 +103,9 @@ func main() {
 		servers = append(servers, userServers...)
 
 		var (
-			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](db))
-			tenantSpecificService = tenantservice.NewService(repository.Repository[tenantmodels.Tenant](db), 
-			repository.Repository[masterrolemodels.Role](db))
+			tenantService = repository.NewBaseCRUD(repository.Repository[tenantmodels.Tenant](userDB))
+			tenantSpecificService = tenantservice.NewService(repository.Repository[tenantmodels.Tenant](userDB), 
+			repository.Repository[masterrolemodels.Role](userDB))
 			tenantEndpoint = tenantendpoint.New(tenantService, tenantSpecificService, logger, client)
 			tenantServers = tenanttransports.NewHandler(tenantEndpoint, logger)
 		)
@@ -109,7 +113,7 @@ func main() {
 		servers = append(servers, tenantServers...)
 
 		var (
-			roleService = repository.NewBaseCRUD(repository.Repository[masterrolemodels.Role](db))
+			roleService = repository.NewBaseCRUD(repository.Repository[masterrolemodels.Role](userDB))
 			roleEndpoint = masterroleendpoint.New(roleService, logger)
 			roleServers = masterroletransports.NewHandler(roleEndpoint, logger)
 		)
@@ -117,7 +121,7 @@ func main() {
 		servers = append(servers, roleServers...)
 
 		var (
-			userMetadataService = repository.NewBaseCRUD(repository.Repository[usermetadatamodels.UserMetadata](db))
+			userMetadataService = repository.NewBaseCRUD(repository.Repository[usermetadatamodels.UserMetadata](userDB))
 			userMetadataEndpoint = usermetadataendpoints.New(userMetadataService, logger)
 			userMetadataServers = usermetadatatransports.NewHandler(userMetadataEndpoint, logger)
 		)
@@ -153,8 +157,8 @@ func main() {
 				close(cancelInterrupt)
 			})
 		}
-	
 		g.Run()
+		}
 	}
 	
 	fmt.Print(dbErr.Error())

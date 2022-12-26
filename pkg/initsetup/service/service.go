@@ -3,6 +3,8 @@ package initsetupservice
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 
@@ -22,13 +24,12 @@ type InitSetupService interface {
 
 type initSetupService struct {
 	repository repository.IRepository[initsetupmodels.DBConfig]
-	redisConnection redis.Conn
+	databaseConnection *gorm.DB
 }
 
-func NewInitSetupService(repository repository.IRepository[initsetupmodels.DBConfig], redisConnection redis.Conn) InitSetupService {
+func NewInitSetupService(repository repository.IRepository[initsetupmodels.DBConfig]) InitSetupService {
 	return &initSetupService{
 		repository: repository,
-		redisConnection: redisConnection,
 	}
 }
 
@@ -40,7 +41,7 @@ func (i *initSetupService) AddConfig(newConfig initsetupmodels.Config) (initsetu
 		return initsetupmodels.Config{}, err
 	}
 
-	errString:= isDBConnectionValid(newConfig)
+	errString:= i.isDBConnectionValid(newConfig)
 
 	if errString != "Valid"{
 		return initsetupmodels.Config{}, fmt.Errorf(errString)
@@ -52,12 +53,25 @@ func (i *initSetupService) AddConfig(newConfig initsetupmodels.Config) (initsetu
 		return initsetupmodels.Config{}, fmt.Errorf(errString)
 	}
 
+	fmt.Println("Database and Redis connections validated!")
+	fmt.Println("Intialising DB")
+
+	err = i.intialiseDB()
+
+	if err != nil {
+		return initsetupmodels.Config{}, err
+	}
+
 	dbConfig.InitFields()
 	tx := i.repository.Add(dbConfig)
 
-	if tx.Error == nil {
-		i.redisConnection.Do("SET", "ZapprConfig", dbConfig)
+	if tx.Error != nil {
+		return initsetupmodels.Config{}, tx.Error
 	}
+
+	db, _ := i.databaseConnection.DB()
+
+	defer db.Close()
 
 	return newConfig, tx.Error
 
@@ -104,8 +118,24 @@ func populateDBConfig(newConfig initsetupmodels.Config) (initsetupmodels.DBConfi
 
 }
 
-func isDBConnectionValid(newConfig initsetupmodels.Config) string {
-	dsn := dsnBuilder(newConfig.DatabaseUser, newConfig.DatabasePassword, newConfig.DatabaseName, newConfig.DatabaseHost, 5432, newConfig.DatabaseSSLMode)
+func (i *initSetupService) intialiseDB() (error) {
+	initScript, err := os.ReadFile(filepath.Join("db_script.sql"))
+
+	if err != nil {
+		return err
+	}
+
+	tx := i.databaseConnection.Exec(string(initScript))
+
+	if err != nil {
+		return err
+	}
+
+	return tx.Error
+}
+
+func (i *initSetupService) isDBConnectionValid(newConfig initsetupmodels.Config) string {
+	dsn := dsnBuilder(newConfig.DatabaseUser, newConfig.DatabasePassword, newConfig.DatabaseName, newConfig.DatabaseHost, newConfig.DatabasePort, newConfig.DatabaseSSLMode)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 	SkipDefaultTransaction: true,
@@ -131,7 +161,7 @@ func isDBConnectionValid(newConfig initsetupmodels.Config) string {
 		return err.Error()
 	}
 
-	defer database.Close()
+	i.databaseConnection = db
 
 	return "Valid"
 }
